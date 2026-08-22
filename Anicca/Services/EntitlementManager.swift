@@ -7,9 +7,11 @@ final class EntitlementManager: ObservableObject {
  
     var planTier: PlanTier {
         get {
+#if DEBUG
             if UserDefaults.standard.bool(forKey: "developer_override_pro") {
                 return .pro
             }
+#endif
             return _planTier
         }
         set {

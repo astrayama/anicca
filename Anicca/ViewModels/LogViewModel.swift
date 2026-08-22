@@ -130,7 +130,7 @@ final class LogViewModel: ObservableObject {
         do {
             let mapped = try await EmotionMappingService.shared.mapFreeText(text)
             if mapped.isEmpty {
-                print("⚠️ mapFreeText: Returned empty list of mapped emotions.")
+                debugLog("⚠️ mapFreeText: Returned empty list of mapped emotions.")
                 let wordCount = text.split { $0.isWhitespace || $0.isNewline }.count
                 let prefill = wordCount <= 2 ? text : ""
                 entryMode = .browse(prefillSearch: prefill)
@@ -139,7 +139,7 @@ final class LogViewModel: ObservableObject {
                 entryMode = .mappingResult
             }
         } catch {
-            print("🔴 mapFreeText failed: \(error). Falling back to search prefill.")
+            debugLog("🔴 mapFreeText failed: \(error). Falling back to search prefill.")
             let wordCount = text.split { $0.isWhitespace || $0.isNewline }.count
             let prefill = wordCount <= 2 ? text : ""
             entryMode = .browse(prefillSearch: prefill)

@@ -135,9 +135,9 @@ actor EmotionMappingService {
 
         if !(200..<300).contains(http.statusCode) {
             if let errorBody = String(data: data, encoding: .utf8) {
-                print("🔴 Gemini API Error Response (HTTP \(http.statusCode)): \(errorBody)")
+                debugLog("🔴 Gemini API Error Response (HTTP \(http.statusCode)): \(errorBody)")
             } else {
-                print("🔴 Gemini API Error Response (HTTP \(http.statusCode)) with unreadable body")
+                debugLog("🔴 Gemini API Error Response (HTTP \(http.statusCode)) with unreadable body")
             }
             throw EmotionMappingError.invalidResponse
         }
@@ -174,7 +174,7 @@ actor EmotionMappingService {
         do {
             wrapper = try JSONDecoder().decode(Wrapper.self, from: data)
         } catch {
-            print("🔴 parseMappedEmotions failed to decode JSON. Raw response from Gemini: '\(rawJSON)' | Cleaned: '\(cleaned)' | Error: \(error)")
+            debugLog("🔴 parseMappedEmotions failed to decode JSON. Raw response from Gemini: '\(rawJSON)' | Cleaned: '\(cleaned)' | Error: \(error)")
             throw error
         }
 
