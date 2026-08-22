@@ -87,7 +87,7 @@ struct PaywallView: View {
             featureRow("Weekly summary", free: "—", pro: "✓")
             featureRow("AI insight (Gemini)", free: "—", pro: "✓")
             featureRow("Check-in streak tracking", free: "—", pro: "✓")
-            featureRow("Reminder scheduling", free: "—", pro: "✓")
+            featureRow("Reminder scheduling", free: "✓", pro: "✓")
             featureRow("PDF export", free: "—", pro: "✓")
             featureRow("Yggdrasil integration", free: "—", pro: "Bundle")
         }
@@ -169,30 +169,59 @@ struct PaywallView: View {
 
     private var purchaseButtons: some View {
         VStack(spacing: AniccaTheme.Spacing.s12) {
-            Button {
-                Task { await viewModel.buy(.pro) }
-            } label: {
-                HStack {
-                    if viewModel.isWorking { ProgressView().tint(.white) }
-                    Text("\(Strings.Paywall.startPro) — \(viewModel.proPriceString)")
+            if viewModel.isLoadingOfferings {
+                ProgressView()
+                    .padding(.vertical, AniccaTheme.Spacing.s16)
+            } else if !viewModel.offeringsAvailable {
+                VStack(spacing: AniccaTheme.Spacing.s8) {
+                    Text(Strings.Paywall.plansUnavailable)
+                        .anicca(.body)
+                        .multilineTextAlignment(.center)
+                    Button(Strings.Paywall.retry) {
+                        Task { await viewModel.load() }
+                    }
+                    .buttonStyle(SecondaryButtonStyle())
+                }
+            } else {
+                if let proPrice = viewModel.proPriceString {
+                    Button {
+                        Task { await viewModel.buy(.pro) }
+                    } label: {
+                        HStack {
+                            if viewModel.isWorking { ProgressView().tint(.white) }
+                            Text("\(Strings.Paywall.startPro) — \(proPrice)")
+                        }
+                    }
+                    .buttonStyle(PrimaryButtonStyle(disabled: viewModel.isWorking))
+                    .disabled(viewModel.isWorking)
+                }
+
+                if let bundlePrice = viewModel.bundlePriceString {
+                    Button {
+                        Task { await viewModel.buy(.bundle) }
+                    } label: {
+                        Text("\(Strings.Paywall.getBundle) — \(bundlePrice)")
+                    }
+                    .buttonStyle(SecondaryButtonStyle())
+                    .disabled(viewModel.isWorking)
                 }
             }
-            .buttonStyle(PrimaryButtonStyle(disabled: viewModel.isWorking))
-            .disabled(viewModel.isWorking)
-
-            Button {
-                Task { await viewModel.buy(.bundle) }
-            } label: {
-                Text("\(Strings.Paywall.getBundle) — \(viewModel.bundlePriceString)")
-            }
-            .buttonStyle(SecondaryButtonStyle())
-            .disabled(viewModel.isWorking)
         }
     }
 
     private var footer: some View {
-        VStack(spacing: 4) {
-            Text(Strings.Paywall.footer).anicca(.caption)
+        VStack(spacing: AniccaTheme.Spacing.s8) {
+            if !viewModel.subscriptionDisclosureLines.isEmpty {
+                VStack(spacing: 2) {
+                    ForEach(viewModel.subscriptionDisclosureLines, id: \.self) { line in
+                        Text(line).anicca(.caption)
+                    }
+                }
+            }
+            Text(Strings.Paywall.renewalDisclosure)
+                .anicca(.caption)
+                .foregroundStyle(AniccaTheme.textSecondary)
+                .multilineTextAlignment(.center)
             HStack(spacing: AniccaTheme.Spacing.s8) {
                 Button("Privacy") { safariURL = AppConfig.privacyPolicyURL }
                     .buttonStyle(GhostButtonStyle())

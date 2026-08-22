@@ -196,41 +196,25 @@ struct SettingsView: View {
 
     private var remindersSection: some View {
         VStack(alignment: .leading, spacing: AniccaTheme.Spacing.s12) {
-            HStack {
-                sectionTitle(Strings.Settings.reminders)
-                Spacer()
-                if !entitlements.isPro {
-                    Image(systemName: "lock.fill").foregroundStyle(AniccaTheme.brandPrimary)
+            sectionTitle(Strings.Settings.reminders)
+            Toggle(Strings.Settings.reminderToggle, isOn: Binding(
+                get: { viewModel.reminderEnabled },
+                set: { newValue in
+                    Task { await viewModel.toggleReminders(newValue) }
                 }
-            }
-            if !entitlements.isPro {
-                HStack {
-                    Text(Strings.Settings.proFeature).anicca(.subheadline)
-                    Spacer()
-                    Button("Upgrade") { showPaywall = true }
-                        .buttonStyle(SecondaryButtonStyle())
-                        .frame(width: 110)
-                }
-            } else {
-                Toggle(Strings.Settings.reminderToggle, isOn: Binding(
-                    get: { viewModel.reminderEnabled },
-                    set: { newValue in
-                        Task { await viewModel.toggleReminders(newValue) }
-                    }
-                ))
-                .tint(AniccaTheme.brandPrimary)
+            ))
+            .tint(AniccaTheme.brandPrimary)
 
-                if viewModel.reminderEnabled {
-                    DatePicker("Time",
-                               selection: Binding(
-                                get: { viewModel.reminderTime },
-                                set: { newValue in
-                                    viewModel.reminderTime = newValue
-                                    Task { await viewModel.reminderTimeChanged() }
-                                }),
-                               displayedComponents: .hourAndMinute)
-                    .datePickerStyle(.graphical)
-                }
+            if viewModel.reminderEnabled {
+                DatePicker("Time",
+                           selection: Binding(
+                            get: { viewModel.reminderTime },
+                            set: { newValue in
+                                viewModel.reminderTime = newValue
+                                Task { await viewModel.reminderTimeChanged() }
+                            }),
+                           displayedComponents: .hourAndMinute)
+                .datePickerStyle(.graphical)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -292,6 +276,7 @@ struct SettingsView: View {
                 .anicca(.caption)
                 .contentShape(Rectangle())
                 .onTapGesture {
+#if DEBUG
                     developerTapCount += 1
                     if developerTapCount >= 5 {
                         UISelectionFeedbackGenerator().selectionChanged()
@@ -300,6 +285,7 @@ struct SettingsView: View {
                         entitlements.objectWillChange.send()
                         developerTapCount = 0
                     }
+#endif
                 }
             Button {
                 safariURL = AppConfig.privacyPolicyURL
