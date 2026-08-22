@@ -142,9 +142,9 @@ struct AuthView: View {
 
     private var appleButton: some View {
         SignInWithAppleButton(.continue) { request in
-            request.requestedScopes = [.fullName, .email]
-        } onCompletion: { _ in
-            Task { await viewModel.signInWithApple() }
+            viewModel.prepareAppleSignIn(request)
+        } onCompletion: { result in
+            viewModel.handleAppleSignIn(result)
         }
         .signInWithAppleButtonStyle(.black)
         .frame(height: 50)

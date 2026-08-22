@@ -21,12 +21,10 @@ final class AuthService: NSObject, ObservableObject {
     @Published var errorMessage: String?
     @Published var authProvider: AuthProvider?
 
-    private var deleteAccountNonce: String?
     private var pendingDeleteContinuation: CheckedContinuation<String, Error>?
 
     private let client: SupabaseClient
     private var appleNonce: String?
-    private var pendingAppleContinuation: CheckedContinuation<Void, Error>?
 
     private override init() {
         self.client = SupabaseConfig.shared.client
@@ -40,13 +38,11 @@ final class AuthService: NSObject, ObservableObject {
             let session = try await client.auth.session
             await loadProfile(userId: session.user.id.uuidString, email: session.user.email ?? "")
 
-            // Detect auth provider
-            if session.user.appMetadata["provider"] as? String == "apple" {
-                self.authProvider = .apple
-            } else if session.user.appMetadata["provider"] as? String == "google" {
-                self.authProvider = .google
-            } else {
-                self.authProvider = .email
+            // Detect auth provider (appMetadata values are AnyJSON, not String)
+            switch session.user.appMetadata["provider"]?.stringValue {
+            case "apple": self.authProvider = .apple
+            case "google": self.authProvider = .google
+            default: self.authProvider = .email
             }
 
             self.isAuthenticated = true
@@ -95,21 +91,35 @@ final class AuthService: NSObject, ObservableObject {
 
     // MARK: - Apple Sign In
 
-    func signInWithApple(presentationContext: ASPresentationAnchor) async throws {
+    /// Configures the SignInWithAppleButton request with scopes and a fresh nonce.
+    func prepareAppleSignIn(request: ASAuthorizationAppleIDRequest) {
         let nonce = Self.randomNonceString()
         self.appleNonce = nonce
-        let hashedNonce = Self.sha256(nonce)
-
-        let request = ASAuthorizationAppleIDProvider().createRequest()
         request.requestedScopes = [.fullName, .email]
-        request.nonce = hashedNonce
+        request.nonce = Self.sha256(nonce)
+    }
 
-        return try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
-            self.pendingAppleContinuation = continuation
-            let controller = ASAuthorizationController(authorizationRequests: [request])
-            controller.delegate = self
-            controller.presentationContextProvider = self
-            controller.performRequests()
+    /// Exchanges the credential returned by SignInWithAppleButton for a Supabase session.
+    func signInWithApple(identityToken: String, email credentialEmail: String?, fullName: PersonNameComponents?) async throws {
+        guard let nonce = appleNonce else {
+            throw AppError.authFailed("Apple Sign In failed.")
+        }
+        appleNonce = nil
+        do {
+            let session = try await client.auth.signInWithIdToken(
+                credentials: .init(provider: .apple, idToken: identityToken, nonce: nonce)
+            )
+            let email = session.user.email ?? credentialEmail ?? ""
+            let displayName: String? = fullName.flatMap { name in
+                let formatted = PersonNameComponentsFormatter().string(from: name)
+                return formatted.isEmpty ? nil : formatted
+            }
+            try? await ensureProfileExists(userId: session.user.id.uuidString, email: email, displayName: displayName)
+            await loadProfile(userId: session.user.id.uuidString, email: email)
+            self.isAuthenticated = true
+            self.authProvider = .apple
+        } catch {
+            throw SupabaseErrorMapper.map(error)
         }
     }
 
@@ -134,7 +144,7 @@ final class AuthService: NSObject, ObservableObject {
             await loadProfile(userId: session.user.id.uuidString, email: email)
             self.isAuthenticated = true
         } catch {
-            print("🔴 Google Sign-in Error: \(error)")
+            debugLog("🔴 Google Sign-in Error: \(error)")
             throw SupabaseErrorMapper.map(error)
         }
     }
@@ -142,13 +152,9 @@ final class AuthService: NSObject, ObservableObject {
     // MARK: - Re-authentication
 
     func reauthenticateWithApple(presentationContext: ASPresentationAnchor) async throws -> String {
-        let nonce = Self.randomNonceString()
-        self.deleteAccountNonce = nonce
-        let hashedNonce = Self.sha256(nonce)
-
         let request = ASAuthorizationAppleIDProvider().createRequest()
         request.requestedScopes = [.email]
-        request.nonce = hashedNonce
+        request.nonce = Self.sha256(Self.randomNonceString())
 
         return try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<String, Error>) in
             self.pendingDeleteContinuation = continuation
@@ -170,7 +176,7 @@ final class AuthService: NSObject, ObservableObject {
             }
             return idToken
         } catch {
-            print("🔴 Google re-authentication error: \(error)")
+            debugLog("🔴 Google re-authentication error: \(error)")
             throw SupabaseErrorMapper.map(error)
         }
     }
@@ -216,7 +222,7 @@ final class AuthService: NSObject, ObservableObject {
         }
 
         do {
-            let response = try await client.functions.invoke(
+            _ = try await client.functions.invoke(
                 "delete-account",
                 options: FunctionInvokeOptions(
                     headers: ["Authorization": "Bearer \(jwt)"],
@@ -234,7 +240,7 @@ final class AuthService: NSObject, ObservableObject {
             self.isAuthenticated = false
             self.authProvider = nil
         } catch {
-            print("🔴 AuthService.deleteAccount failed: \(error)")
+            debugLog("🔴 AuthService.deleteAccount failed: \(error)")
             throw SupabaseErrorMapper.map(error)
         }
     }
@@ -260,9 +266,9 @@ final class AuthService: NSObject, ObservableObject {
         )
         do {
             try await client.from("profiles").upsert(insert, onConflict: "id").execute()
-            print("🟢 AuthService: Successfully ensured profile exists in Supabase.")
+            debugLog("🟢 AuthService: Successfully ensured profile exists in Supabase.")
         } catch {
-            print("🔴 AuthService.ensureProfileExists failed: \(error)")
+            debugLog("🔴 AuthService.ensureProfileExists failed: \(error)")
             throw error
         }
     }
@@ -290,9 +296,9 @@ final class AuthService: NSObject, ObservableObject {
                 createdAt: row.created_at
             )
             self.currentUser = profile
-            print("🟢 AuthService: Successfully loaded profile from Supabase for \(email). Display name: \(row.display_name ?? "nil")")
+            debugLog("🟢 AuthService: Successfully loaded profile from Supabase for \(email). Display name: \(row.display_name ?? "nil")")
         } catch {
-            print("🔴 AuthService.loadProfile failed: \(error). Falling back to synthesized local profile.")
+            debugLog("🔴 AuthService.loadProfile failed: \(error). Falling back to synthesized local profile.")
             // Fallback: synthesize a local profile so the app still loads.
             self.currentUser = UserProfile(id: userId, email: email)
         }
@@ -307,9 +313,9 @@ final class AuthService: NSObject, ObservableObject {
         do {
             try await client.from("profiles").update(update).eq("id", value: userId).execute()
             currentUser?.displayName = name
-            print("🟢 AuthService: Successfully updated display name to '\(name)' in Supabase.")
+            debugLog("🟢 AuthService: Successfully updated display name to '\(name)' in Supabase.")
         } catch {
-            print("🔴 AuthService.updateDisplayName failed: \(error). Using local-only fallback.")
+            debugLog("🔴 AuthService.updateDisplayName failed: \(error). Using local-only fallback.")
             // Silent — fall back to local
             currentUser?.displayName = name
         }
@@ -321,9 +327,9 @@ final class AuthService: NSObject, ObservableObject {
         update.plan_tier = tier.rawValue
         do {
             try await client.from("profiles").update(update).eq("id", value: userId).execute()
-            print("🟢 AuthService: Successfully updated plan tier to '\(tier.rawValue)' in Supabase.")
+            debugLog("🟢 AuthService: Successfully updated plan tier to '\(tier.rawValue)' in Supabase.")
         } catch {
-            print("🔴 AuthService.updatePlanTier failed: \(error)")
+            debugLog("🔴 AuthService.updatePlanTier failed: \(error)")
             // Silent — RevenueCat is source of truth so cache locally
         }
         currentUser?.planTier = tier
@@ -336,9 +342,9 @@ final class AuthService: NSObject, ObservableObject {
         update.reminder_time = time
         do {
             try await client.from("profiles").update(update).eq("id", value: userId).execute()
-            print("🟢 AuthService: Successfully updated reminder settings in Supabase.")
+            debugLog("🟢 AuthService: Successfully updated reminder settings in Supabase.")
         } catch {
-            print("🔴 AuthService.updateReminderSettings failed: \(error)")
+            debugLog("🔴 AuthService.updateReminderSettings failed: \(error)")
             // ignore — best effort
         }
         currentUser?.reminderEnabled = enabled
@@ -353,9 +359,9 @@ final class AuthService: NSObject, ObservableObject {
         update.last_check_in_date = lastDate
         do {
             try await client.from("profiles").update(update).eq("id", value: userId).execute()
-            print("🟢 AuthService: Successfully updated streak/checkin stats in Supabase.")
+            debugLog("🟢 AuthService: Successfully updated streak/checkin stats in Supabase.")
         } catch {
-            print("🔴 AuthService.updateStreakStats failed: \(error)")
+            debugLog("🔴 AuthService.updateStreakStats failed: \(error)")
             // ignore — best effort
         }
         currentUser?.checkInStreak = streak
@@ -403,64 +409,28 @@ extension AuthService: ASAuthorizationControllerDelegate, ASAuthorizationControl
         }
     }
 
+    // The ASAuthorizationController delegate serves only the delete-account
+    // re-auth flow; interactive sign-in goes through SignInWithAppleButton.
     nonisolated func authorizationController(controller: ASAuthorizationController, didCompleteWithAuthorization authorization: ASAuthorization) {
         Task { @MainActor in
             guard
                 let appleCredential = authorization.credential as? ASAuthorizationAppleIDCredential,
                 let identityTokenData = appleCredential.identityToken,
-                let identityToken = String(data: identityTokenData, encoding: .utf8),
-                let nonce = self.appleNonce
+                let identityToken = String(data: identityTokenData, encoding: .utf8)
             else {
-                if self.pendingDeleteContinuation != nil {
-                    self.pendingDeleteContinuation?.resume(throwing: AppError.authFailed("Apple re-authentication failed."))
-                    self.pendingDeleteContinuation = nil
-                } else {
-                    self.pendingAppleContinuation?.resume(throwing: AppError.authFailed("Apple Sign In failed."))
-                    self.pendingAppleContinuation = nil
-                }
+                self.pendingDeleteContinuation?.resume(throwing: AppError.authFailed("Apple re-authentication failed."))
+                self.pendingDeleteContinuation = nil
                 return
             }
-
-            do {
-                if self.pendingDeleteContinuation != nil {
-                    self.pendingDeleteContinuation?.resume(returning: identityToken)
-                    self.pendingDeleteContinuation = nil
-                    return
-                }
-
-                let session = try await client.auth.signInWithIdToken(
-                    credentials: .init(provider: .apple, idToken: identityToken, nonce: nonce)
-                )
-                let email = session.user.email ?? appleCredential.email ?? ""
-                let displayName: String? = {
-                    if let name = appleCredential.fullName {
-                        let formatter = PersonNameComponentsFormatter()
-                        let formatted = formatter.string(from: name)
-                        return formatted.isEmpty ? nil : formatted
-                    }
-                    return nil
-                }()
-                try? await self.ensureProfileExists(userId: session.user.id.uuidString, email: email, displayName: displayName)
-                await self.loadProfile(userId: session.user.id.uuidString, email: email)
-                self.isAuthenticated = true
-                self.authProvider = .apple
-                self.pendingAppleContinuation?.resume(returning: ())
-            } catch {
-                if self.pendingDeleteContinuation != nil {
-                    self.pendingDeleteContinuation?.resume(throwing: error)
-                    self.pendingDeleteContinuation = nil
-                } else {
-                    self.pendingAppleContinuation?.resume(throwing: SupabaseErrorMapper.map(error))
-                }
-            }
-            self.pendingAppleContinuation = nil
+            self.pendingDeleteContinuation?.resume(returning: identityToken)
+            self.pendingDeleteContinuation = nil
         }
     }
 
     nonisolated func authorizationController(controller: ASAuthorizationController, didCompleteWithError error: Error) {
         Task { @MainActor in
-            self.pendingAppleContinuation?.resume(throwing: AppError.authFailed("Apple Sign In was cancelled or failed."))
-            self.pendingAppleContinuation = nil
+            self.pendingDeleteContinuation?.resume(throwing: AppError.authFailed("Apple re-authentication was cancelled or failed."))
+            self.pendingDeleteContinuation = nil
         }
     }
 }
