@@ -2,6 +2,7 @@ import SwiftUI
 import AuthenticationServices
 
 struct AuthView: View {
+    @EnvironmentObject private var auth: AuthService
     @StateObject private var viewModel = AuthViewModel()
     @FocusState private var focusedField: Field?
 
@@ -34,6 +35,12 @@ struct AuthView: View {
             }
         }
         .scrollDismissesKeyboard(.interactively)
+        // Errors from outside the form, such as an email confirmation link that couldn't sign in.
+        .onReceive(auth.$errorMessage.compactMap { $0 }) { message in
+            viewModel.infoMessage = nil
+            viewModel.generalError = message
+            auth.errorMessage = nil
+        }
     }
 
     private var headerBlock: some View {

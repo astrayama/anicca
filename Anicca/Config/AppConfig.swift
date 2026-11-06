@@ -22,15 +22,6 @@ enum AppConfig {
         return raw
     }()
 
-    static let geminiAPIKey: String = {
-        guard let raw = Bundle.main.object(forInfoDictionaryKey: "GEMINI_API_KEY") as? String,
-              !raw.isEmpty
-        else {
-            return ""
-        }
-        return raw
-    }()
-
     static let revenueCatAPIKey: String = {
         guard let raw = Bundle.main.object(forInfoDictionaryKey: "REVENUECAT_API_KEY") as? String,
               !raw.isEmpty
@@ -60,6 +51,11 @@ enum AppConfig {
     static let privacyPolicyURL = URL(string: "https://anicca.lovable.app/privacy")!
     static let termsOfUseURL = URL(string: "https://anicca.lovable.app/terms")!
     static let yggdrasilURL = URL(string: "https://yggdrasil-journal.lovable.app/")!
+
+    /// Where Supabase email links (sign-up confirmation) send the user back into the app. The
+    /// scheme is registered in Info.plist, and this exact URL must be listed under Supabase →
+    /// Authentication → URL Configuration → Redirect URLs, or Supabase falls back to the Site URL.
+    static let authCallbackURL = URL(string: "\(Bundle.main.bundleIdentifier ?? "com.screenseiji.anicca")://auth-callback")!
 
     // MARK: - Build Info
     static var appVersion: String {

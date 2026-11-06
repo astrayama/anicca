@@ -82,7 +82,13 @@ final class AuthViewModel: ObservableObject {
             case .signIn:
                 try await auth.signInWithEmail(email: email, password: password)
             case .signUp:
-                try await auth.signUpWithEmail(email: email, password: password, displayName: displayName)
+                let result = try await auth.signUpWithEmail(email: email, password: password, displayName: displayName)
+                if result == .confirmationEmailSent {
+                    // Keep the email and password filled in so "Sign In" works right after
+                    // confirming (for example, if the link was opened on another device).
+                    mode = .signIn
+                    infoMessage = Strings.Auth.confirmEmailSent
+                }
             }
         } catch let error as AppError {
             generalError = error.errorDescription

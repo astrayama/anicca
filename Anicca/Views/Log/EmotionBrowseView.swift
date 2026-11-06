@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Mode 2 — Flat alphabetical emotion browse with AI-powered search and chakra filter chips.
+/// Mode 2 — Flat alphabetical emotion browse with on-device ranked search and chakra filter chips.
 /// Can be presented full-screen (default) or as a sheet from the mapping result view.
 struct EmotionBrowseView: View {
     @ObservedObject var viewModel: LogViewModel
@@ -10,9 +10,6 @@ struct EmotionBrowseView: View {
 
     @State private var searchText: String = ""
     @State private var activeFilter: EnergyCenter? = nil
-    @State private var aiSearchResults: [Emotion]? = nil
-    @State private var isSearching: Bool = false
-    @State private var searchTask: Task<Void, Never>? = nil
 
     init(viewModel: LogViewModel, prefillSearch: String = "", isSheet: Bool = false) {
         self.viewModel = viewModel
@@ -31,27 +28,13 @@ struct EmotionBrowseView: View {
             pool = EmotionLibrary.all
         }
 
-        // If AI search results exist, respect their ordering but restrict to pool
-        if let ai = aiSearchResults {
-            let poolIds = Set(pool.map { $0.id })
-            let aiFiltered = ai.filter { poolIds.contains($0.id) }
-            let aiIds = Set(aiFiltered.map { $0.id })
-            let remainder = pool.filter { !aiIds.contains($0.id) }.sorted { $0.name < $1.name }
-            return aiFiltered + remainder
-        }
-
-        if searchText.isEmpty {
+        if searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             return pool.sorted { $0.name < $1.name }
         }
 
-        // Local fallback filter
-        let lower = searchText.lowercased()
-        return pool
-            .filter { e in
-                e.name.lowercased().contains(lower) ||
-                e.synonyms.contains { $0.lowercased().contains(lower) }
-            }
-            .sorted { $0.name < $1.name }
+        // Ranked on-device search (names, synonyms, everyday phrases), restricted to the active filter.
+        let poolIds = Set(pool.map { $0.id })
+        return EmotionMatcher.search(searchText).filter { poolIds.contains($0.id) }
     }
 
     private var selectedEmotionList: [Emotion] {
@@ -124,23 +107,14 @@ struct EmotionBrowseView: View {
 
     private var searchBar: some View {
         HStack(spacing: AniccaTheme.Spacing.s8) {
-            if isSearching {
-                ProgressView().scaleEffect(0.8)
-            } else {
-                Image(systemName: "magnifyingglass")
-                    .foregroundStyle(AniccaTheme.textMuted)
-            }
+            Image(systemName: "magnifyingglass")
+                .foregroundStyle(AniccaTheme.textMuted)
             TextField("Search emotions...", text: $searchText)
                 .submitLabel(.search)
                 .autocorrectionDisabled()
-                .onChange(of: searchText) { _, newValue in
-                    scheduleSearch(query: newValue)
-                }
             if !searchText.isEmpty {
                 Button {
                     withAnimation { searchText = "" }
-                    aiSearchResults = nil
-                    searchTask?.cancel()
                 } label: {
                     Image(systemName: "xmark.circle.fill")
                         .foregroundStyle(AniccaTheme.textMuted)
@@ -325,35 +299,6 @@ struct EmotionBrowseView: View {
             .padding(.horizontal, AniccaTheme.Spacing.s20)
             .padding(.vertical, AniccaTheme.Spacing.s12)
             .background(.regularMaterial)
-        }
-    }
-
-    // MARK: - AI Search Debounce
-
-    private func scheduleSearch(query: String) {
-        searchTask?.cancel()
-        aiSearchResults = nil
-        guard query.count >= 2 else { return }
-        searchTask = Task {
-            try? await Task.sleep(nanoseconds: 400_000_000) // 400ms debounce
-            guard !Task.isCancelled else { return }
-            await performAISearch(query: query)
-        }
-    }
-
-    @MainActor
-    private func performAISearch(query: String) async {
-        guard !query.isEmpty else { return }
-        isSearching = true
-        defer { isSearching = false }
-        do {
-            let results = try await EmotionMappingService.shared.searchEmotions(query: query)
-            if !results.isEmpty {
-                aiSearchResults = results
-            }
-        } catch {
-            // Silently fall back to local string matching (handled in baseList)
-            aiSearchResults = nil
         }
     }
 }

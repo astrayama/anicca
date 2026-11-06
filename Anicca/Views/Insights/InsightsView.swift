@@ -19,7 +19,7 @@ struct InsightsView: View {
                     weeklySummaryCard
                     timelineCard
                     centersBreakdownCard
-                    aiInsightCard
+                    reflectionCard
                     recentCheckInsCard
                 }
                 .padding(AniccaTheme.Spacing.s20)
@@ -29,14 +29,6 @@ struct InsightsView: View {
         .navigationBarTitleDisplayMode(.inline)
         .task {
             await viewModel.load()
-            if entitlements.isPro {
-                await viewModel.loadAIInsight()
-            }
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .planUpgraded)) { _ in
-            Task {
-                if entitlements.isPro { await viewModel.loadAIInsight() }
-            }
         }
         .sheet(isPresented: $showPaywall) {
             PaywallView()
@@ -207,12 +199,12 @@ struct InsightsView: View {
         .aniccaCard()
     }
 
-    private var aiInsightCard: some View {
+    private var reflectionCard: some View {
         VStack(alignment: .leading, spacing: AniccaTheme.Spacing.s12) {
             HStack {
                 Image(systemName: "sparkles")
                     .foregroundStyle(AniccaTheme.brandPrimary)
-                Text(Strings.Insights.aiInsightTitle).anicca(.headline)
+                Text(Strings.Insights.reflectionTitle).anicca(.headline)
                 Spacer()
                 if !entitlements.isPro {
                     Image(systemName: "lock.fill").foregroundStyle(AniccaTheme.brandPrimary)
@@ -221,25 +213,20 @@ struct InsightsView: View {
             Group {
                 if !entitlements.isPro {
                     VStack(alignment: .leading, spacing: AniccaTheme.Spacing.s12) {
-                        Text("Your personalized AI insight").anicca(.body).blur(radius: 4)
+                        Text("Your weekly reflection").anicca(.body).blur(radius: 4)
                         Text("Gentle reflections about your weekly patterns will appear here.")
                             .anicca(.body)
                             .blur(radius: 4)
-                        Button(Strings.Insights.aiInsightUnlock) { showPaywall = true }
+                        Button(Strings.Insights.reflectionUnlock) { showPaywall = true }
                             .buttonStyle(SecondaryButtonStyle())
                     }
-                } else if viewModel.aiLoading {
-                    HStack {
-                        ProgressView()
-                        Text("Generating your insight…").anicca(.subheadline)
-                    }
-                } else if let insight = viewModel.aiInsight {
+                } else if let reflection = viewModel.weeklyReflection {
                     VStack(alignment: .leading, spacing: AniccaTheme.Spacing.s8) {
-                        Text(insight.insight).anicca(.body)
-                        if !insight.suggestedPractices.isEmpty {
+                        Text(reflection.text).anicca(.body)
+                        if !reflection.practices.isEmpty {
                             VStack(alignment: .leading, spacing: 4) {
                                 Text("Try this week:").anicca(.subheadline)
-                                ForEach(insight.suggestedPractices, id: \.self) { p in
+                                ForEach(reflection.practices, id: \.self) { p in
                                     HStack(alignment: .top, spacing: 4) {
                                         Text("•")
                                         Text(p).anicca(.body)
@@ -247,18 +234,10 @@ struct InsightsView: View {
                                 }
                             }
                         }
-                        Text(Strings.Insights.aiInsightCaption).anicca(.caption)
-                    }
-                } else if let aiError = viewModel.aiError {
-                    VStack(alignment: .leading, spacing: AniccaTheme.Spacing.s8) {
-                        Text(aiError).anicca(.body)
-                        Button("Try again") {
-                            Task { await viewModel.loadAIInsight() }
-                        }
-                        .buttonStyle(SecondaryButtonStyle())
+                        Text(Strings.Insights.reflectionCaption).anicca(.caption)
                     }
                 } else {
-                    Text("Log at least 3 check-ins this week to unlock your weekly AI insight.")
+                    Text("Log a check-in this week to see your weekly reflection.")
                         .anicca(.body)
                 }
             }

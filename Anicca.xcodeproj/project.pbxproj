@@ -14,11 +14,11 @@
 		19CB469116A0E481404BC850 /* LogView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F739498E6F3DBCBC7A56E4F /* LogView.swift */; };
 		21C16A6C35B97215EE8AA391 /* YggdrasilIntegrationProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3DCD7E7394508BCFC297DF36 /* YggdrasilIntegrationProtocol.swift */; };
 		29354A032C1ABC952B11E8F8 /* EmotionMappingResultView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87D6616F7613D883D2C800FF /* EmotionMappingResultView.swift */; };
-		2AC1944C9DB59C8186410D8B /* EmotionMappingService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 061B36E976CD5157583989C0 /* EmotionMappingService.swift */; };
+		2AC1944C9DB59C8186410D8B /* EmotionMatcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 061B36E976CD5157583989C0 /* EmotionMatcher.swift */; };
 		2E28968513B23B5F4202818A /* RadarChartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6388252D53DE35CF6885CA29 /* RadarChartView.swift */; };
 		327BAF756E588ED22695CCF6 /* Date+Helpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B3C89384C65232E23196E3D /* Date+Helpers.swift */; };
 		3ECAF6C13C424D54A492909F /* AniccaApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = E6270D41609DA7BED3B2D0A4 /* AniccaApp.swift */; };
-		41096DD6C102322EFC28C72B /* AIInsight.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7400B0868CBFA9D83617E1BA /* AIInsight.swift */; };
+		41096DD6C102322EFC28C72B /* WeeklyReflection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7400B0868CBFA9D83617E1BA /* WeeklyReflection.swift */; };
 		4302AFF6ECB5821463F5B137 /* UserNotifications.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0E60F1C25580A43C0C34D290 /* UserNotifications.framework */; };
 		43C298FF02DBB9F1266C8281 /* CheckIn.swift in Sources */ = {isa = PBXBuildFile; fileRef = 985ABEA5F66DB4AF42F3A1DC /* CheckIn.swift */; };
 		44A9F6DFAAA435522B3DB57C /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 76AFA9EF06385C80993DBF0E /* PrivacyInfo.xcprivacy */; };
@@ -49,7 +49,7 @@
 		B4561379D3AE8A5DC328CD35 /* CheckInService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87D552810F1875A6CD2CD43E /* CheckInService.swift */; };
 		B55FC917902E51C77FCBDDBB /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFE4485C29B64D5E186BC25F /* NotificationService.swift */; };
 		BDE876A33BAAB9B633D891BE /* AniccaTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = C946E1572BC0AE3D13BB00FC /* AniccaTheme.swift */; };
-		BFB147118E36E60D6FA976A8 /* AIService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 39F5AB41B8917990935B8B03 /* AIService.swift */; };
+		BFB147118E36E60D6FA976A8 /* ReflectionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 39F5AB41B8917990935B8B03 /* ReflectionService.swift */; };
 		C4EA3D0701089ED48B05F390 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B9C17171B65828821156B5F /* SettingsView.swift */; };
 		CA95869535813E96C64CC7EA /* LogViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 909310110A8BBA5ECAD0B26F /* LogViewModel.swift */; };
 		D245EA6C13FBFA26EEEDE2D4 /* View+Modifiers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64F78FB0EA8462762DD55B93 /* View+Modifiers.swift */; };
@@ -67,7 +67,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		061B36E976CD5157583989C0 /* EmotionMappingService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmotionMappingService.swift; sourceTree = "<group>"; };
+		061B36E976CD5157583989C0 /* EmotionMatcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmotionMatcher.swift; sourceTree = "<group>"; };
 		0E60F1C25580A43C0C34D290 /* UserNotifications.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UserNotifications.framework; path = System/Library/Frameworks/UserNotifications.framework; sourceTree = SDKROOT; };
 		14826F1B8CA2AFFC7FE756F9 /* RevenueCatService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RevenueCatService.swift; sourceTree = "<group>"; };
 		1E650E0ECD3752AAA10FB85E /* MainTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainTabView.swift; sourceTree = "<group>"; };
@@ -78,7 +78,7 @@
 		259B2A6BF9851E24EAC87F88 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
 		2B3C89384C65232E23196E3D /* Date+Helpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Date+Helpers.swift"; sourceTree = "<group>"; };
 		32D098CBE2BC09F10558A09E /* EmotionBrowseView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmotionBrowseView.swift; sourceTree = "<group>"; };
-		39F5AB41B8917990935B8B03 /* AIService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIService.swift; sourceTree = "<group>"; };
+		39F5AB41B8917990935B8B03 /* ReflectionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReflectionService.swift; sourceTree = "<group>"; };
 		3DCD7E7394508BCFC297DF36 /* YggdrasilIntegrationProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YggdrasilIntegrationProtocol.swift; sourceTree = "<group>"; };
 		459513D5A86CAC841F8510ED /* PaywallViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaywallViewModel.swift; sourceTree = "<group>"; };
 		46348DC30BFB1788E0AF0F6F /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
@@ -89,7 +89,7 @@
 		6388252D53DE35CF6885CA29 /* RadarChartView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RadarChartView.swift; sourceTree = "<group>"; };
 		64F78FB0EA8462762DD55B93 /* View+Modifiers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "View+Modifiers.swift"; sourceTree = "<group>"; };
 		6F9150B2E7FDD9A828F458E0 /* ExportService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExportService.swift; sourceTree = "<group>"; };
-		7400B0868CBFA9D83617E1BA /* AIInsight.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIInsight.swift; sourceTree = "<group>"; };
+		7400B0868CBFA9D83617E1BA /* WeeklyReflection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeeklyReflection.swift; sourceTree = "<group>"; };
 		76AFA9EF06385C80993DBF0E /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		7CCA1667BFF9DE5129F24A74 /* Anicca.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Anicca.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		8647CF3AFBB87817B580F41D /* AuthView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthView.swift; sourceTree = "<group>"; };
@@ -190,7 +190,7 @@
 		48C69FBB09D34A17174890A8 /* Models */ = {
 			isa = PBXGroup;
 			children = (
-				7400B0868CBFA9D83617E1BA /* AIInsight.swift */,
+				7400B0868CBFA9D83617E1BA /* WeeklyReflection.swift */,
 				AFD803C0B78B056D719DE67A /* AppError.swift */,
 				985ABEA5F66DB4AF42F3A1DC /* CheckIn.swift */,
 				E5DF3908552F9872F00AE976 /* Emotion.swift */,
@@ -246,10 +246,10 @@
 		714868E5F7F6E761591D7969 /* Services */ = {
 			isa = PBXGroup;
 			children = (
-				39F5AB41B8917990935B8B03 /* AIService.swift */,
+				39F5AB41B8917990935B8B03 /* ReflectionService.swift */,
 				BFBBA217D6553550C91504D9 /* AuthService.swift */,
 				87D552810F1875A6CD2CD43E /* CheckInService.swift */,
-				061B36E976CD5157583989C0 /* EmotionMappingService.swift */,
+				061B36E976CD5157583989C0 /* EmotionMatcher.swift */,
 				B8041E184860330235280CBE /* EntitlementManager.swift */,
 				6F9150B2E7FDD9A828F458E0 /* ExportService.swift */,
 				E240FBF57739C474212AB59B /* InsightsService.swift */,
@@ -448,8 +448,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				41096DD6C102322EFC28C72B /* AIInsight.swift in Sources */,
-				BFB147118E36E60D6FA976A8 /* AIService.swift in Sources */,
+				41096DD6C102322EFC28C72B /* WeeklyReflection.swift in Sources */,
+				BFB147118E36E60D6FA976A8 /* ReflectionService.swift in Sources */,
 				3ECAF6C13C424D54A492909F /* AniccaApp.swift in Sources */,
 				BDE876A33BAAB9B633D891BE /* AniccaTheme.swift in Sources */,
 				4CCB772EE91E9679C7BCC53D /* AppConfig.swift in Sources */,
@@ -467,7 +467,7 @@
 				B09AF32AB5A54DE37C701684 /* EmotionBrowseView.swift in Sources */,
 				716D3D82AD44F78DB6367B43 /* EmotionLibrary.swift in Sources */,
 				29354A032C1ABC952B11E8F8 /* EmotionMappingResultView.swift in Sources */,
-				2AC1944C9DB59C8186410D8B /* EmotionMappingService.swift in Sources */,
+				2AC1944C9DB59C8186410D8B /* EmotionMatcher.swift in Sources */,
 				F7B356A6315DC7C1D6657F79 /* EnergyCenter.swift in Sources */,
 				FEC215480E98A56AB4E1962A /* EntitlementManager.swift in Sources */,
 				D6C38C3E5E96DF040F8D0814 /* ExportService.swift in Sources */,

@@ -36,7 +36,11 @@ final class AuthService: NSObject, ObservableObject {
     func restoreSession() async {
         do {
             let session = try await client.auth.session
-            await loadProfile(userId: session.user.id.uuidString, email: session.user.email ?? "")
+            await loadProfile(
+                userId: session.user.id.uuidString,
+                email: session.user.email ?? "",
+                displayName: session.user.userMetadata["display_name"]?.stringValue
+            )
 
             // Detect auth provider (appMetadata values are AnyJSON, not String)
             switch session.user.appMetadata["provider"]?.stringValue {
@@ -55,15 +59,30 @@ final class AuthService: NSObject, ObservableObject {
 
     // MARK: - Email/Password
 
-    func signUpWithEmail(email: String, password: String, displayName: String) async throws {
+    enum EmailSignUpResult {
+        case signedIn
+        /// The project requires email confirmation: there is no session until the user opens the
+        /// link, which comes back through `handleAuthCallback(_:)`.
+        case confirmationEmailSent
+    }
+
+    func signUpWithEmail(email: String, password: String, displayName: String) async throws -> EmailSignUpResult {
         isLoading = true
         defer { isLoading = false }
         do {
-            let response = try await client.auth.signUp(email: email, password: password)
-            let user = response.user
-            try await createProfile(userId: user.id.uuidString, email: email, displayName: displayName)
-            await loadProfile(userId: user.id.uuidString, email: email)
+            let response = try await client.auth.signUp(
+                email: email,
+                password: password,
+                data: ["display_name": .string(displayName)],
+                redirectTo: AppConfig.authCallbackURL
+            )
+            // Without a session the profile insert would be rejected by RLS, so it waits until
+            // the first signed-in load (see `loadProfile`).
+            guard let session = response.session else { return .confirmationEmailSent }
+            try await createProfile(userId: session.user.id.uuidString, email: email, displayName: displayName)
+            await loadProfile(userId: session.user.id.uuidString, email: email)
             self.isAuthenticated = true
+            return .signedIn
         } catch {
             throw SupabaseErrorMapper.map(error)
         }
@@ -74,10 +93,34 @@ final class AuthService: NSObject, ObservableObject {
         defer { isLoading = false }
         do {
             let session = try await client.auth.signIn(email: email, password: password)
-            await loadProfile(userId: session.user.id.uuidString, email: session.user.email ?? email)
+            await loadProfile(
+                userId: session.user.id.uuidString,
+                email: session.user.email ?? email,
+                displayName: session.user.userMetadata["display_name"]?.stringValue
+            )
             self.isAuthenticated = true
         } catch {
             throw SupabaseErrorMapper.map(error)
+        }
+    }
+
+    /// Finishes sign-up when the user opens the confirmation link from their email.
+    func handleAuthCallback(_ url: URL) async {
+        do {
+            let session = try await client.auth.session(from: url)
+            await loadProfile(
+                userId: session.user.id.uuidString,
+                email: session.user.email ?? "",
+                displayName: session.user.userMetadata["display_name"]?.stringValue
+            )
+            self.authProvider = .email
+            self.isAuthenticated = true
+        } catch {
+            debugLog("🔴 AuthService.handleAuthCallback failed: \(error)")
+            // Already signed in (an old link opened again): nothing to tell the user.
+            if !isAuthenticated {
+                self.errorMessage = Strings.Auth.confirmLinkFailed
+            }
         }
     }
 
@@ -273,35 +316,56 @@ final class AuthService: NSObject, ObservableObject {
         }
     }
 
-    private func loadProfile(userId: String, email: String) async {
+    /// Loads the signed-in user's profile row. If it can't be read, the row may never have been
+    /// created (email sign-ups that had to confirm first get no session, so they skip
+    /// `createProfile`), so insert it without touching an existing row and try once more.
+    private func loadProfile(userId: String, email: String, displayName: String? = nil) async {
         do {
-            let row: UserProfileDTO = try await client
-                .from("profiles")
-                .select()
-                .eq("id", value: userId)
-                .single()
-                .execute()
-                .value
-
-            let profile = UserProfile(
-                id: row.id,
-                email: row.email,
-                displayName: row.display_name,
-                planTier: PlanTier(rawValue: row.plan_tier) ?? .free,
-                checkInStreak: row.check_in_streak,
-                lastCheckInDate: row.last_check_in_date,
-                totalCheckIns: row.total_check_ins,
-                reminderEnabled: row.reminder_enabled,
-                reminderTime: row.reminder_time,
-                createdAt: row.created_at
-            )
-            self.currentUser = profile
-            debugLog("🟢 AuthService: Successfully loaded profile from Supabase for \(email). Display name: \(row.display_name ?? "nil")")
+            self.currentUser = try await fetchProfile(userId: userId)
+            debugLog("🟢 AuthService: Successfully loaded profile from Supabase for \(email).")
+            return
         } catch {
-            debugLog("🔴 AuthService.loadProfile failed: \(error). Falling back to synthesized local profile.")
-            // Fallback: synthesize a local profile so the app still loads.
-            self.currentUser = UserProfile(id: userId, email: email)
+            debugLog("🔴 AuthService.loadProfile failed: \(error). Creating the row if it's missing.")
         }
+        do {
+            let insert = UserProfileInsert(
+                id: userId,
+                email: email,
+                display_name: displayName,
+                plan_tier: PlanTier.free.rawValue
+            )
+            try await client.from("profiles")
+                .upsert(insert, onConflict: "id", returning: .minimal, ignoreDuplicates: true)
+                .execute()
+            self.currentUser = try await fetchProfile(userId: userId)
+        } catch {
+            debugLog("🔴 AuthService.loadProfile retry failed: \(error). Falling back to synthesized local profile.")
+            // Fallback: synthesize a local profile so the app still loads.
+            self.currentUser = UserProfile(id: userId, email: email, displayName: displayName)
+        }
+    }
+
+    private func fetchProfile(userId: String) async throws -> UserProfile {
+        let row: UserProfileDTO = try await client
+            .from("profiles")
+            .select()
+            .eq("id", value: userId)
+            .single()
+            .execute()
+            .value
+
+        return UserProfile(
+            id: row.id,
+            email: row.email,
+            displayName: row.display_name,
+            planTier: PlanTier(rawValue: row.plan_tier) ?? .free,
+            checkInStreak: row.check_in_streak,
+            lastCheckInDate: row.last_check_in_date,
+            totalCheckIns: row.total_check_ins,
+            reminderEnabled: row.reminder_enabled,
+            reminderTime: row.reminder_time,
+            createdAt: row.created_at
+        )
     }
 
     // MARK: - Updates

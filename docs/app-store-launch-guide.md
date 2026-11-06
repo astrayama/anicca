@@ -4,30 +4,22 @@ One step at a time, in order. Every step is one action with a **Done when** so y
 
 Legend: 🧑 = needs you (your accounts) · 🤖 = already done by Claude · ⏱ = realistic time
 
-> **Only have 20 minutes today? Do Phase 0 and stop.** It's the only urgent one — a live, billable API key is public on GitHub.
+> **Only have 15 minutes today? Do Phase 0 and stop.** It's the only urgent one — a live, billable API key is public on GitHub.
 
 **The big picture:** 0 security → 1 Apple paperwork (starts a multi-day wait) → 2 merge the code fixes → 3 backend switch-on → 4 subscriptions → 5 legal pages → 6 first TestFlight → 7 listing + submit. Roughly **6–7 focused hours** total, spread over as many days as you like, plus Apple's processing waits.
 
 ---
 
-## Phase 0 — Stop the bleeding 🧑 ⏱ ~20 min · do this TODAY
+## Phase 0 — Stop the bleeding 🧑 ⏱ ~15 min · do this TODAY
 
-- [ ] **0.1 Rotate the Gemini key** ⏱ 10 min
-  **Do:** Open [Google AI Studio → API keys](https://aistudio.google.com/apikey) (or Google Cloud console → APIs & Services → Credentials if the key lives there). Delete the key starting `AIzaSyAM…`. Create a new one and copy it.
-  **Done when:** the old key is deleted and the new one is in your clipboard.
+- [ ] **0.1 Delete the old Gemini key** ⏱ 5 min
+  **Do:** Open [Google AI Studio → API keys](https://aistudio.google.com/apikey) (or Google Cloud console → APIs & Services → Credentials if the key lives there). Delete the key starting `AIzaSyAM…`. Don't create a new one — the app no longer uses Gemini. You can also remove the `GEMINI_API_KEY` line from `/Users/isa/Anicca/Secrets.xcconfig`.
+  **Done when:** the old key is deleted.
   *Why: the old key is in the repo's git history on GitHub, and it bills your Google account.*
 
-- [ ] **0.2 Restrict + cap the new key** ⏱ 5 min
-  **Do:** In [Google Cloud console → Credentials](https://console.cloud.google.com/apis/credentials), open the new key → API restrictions → restrict to **Generative Language API**. Then set a daily quota cap (APIs & Services → Generative Language API → Quotas), e.g. 5,000 requests/day.
-  **Done when:** the key shows "Restricted" and a quota cap exists.
-
-- [ ] **0.3 Put the new key in your local secrets** ⏱ 2 min
-  **Do:** Edit `/Users/isa/Anicca/Secrets.xcconfig` → set `GEMINI_API_KEY = ` your new key. (This file is gitignored — keep it that way.)
-  **Done when:** saved.
-
-- [ ] **0.4 Confirm Row Level Security is ON** ⏱ 5 min
-  **Do:** [Supabase dashboard](https://supabase.com/dashboard) → your project → Table Editor. Check `profiles`, `check_ins`, `emotion_entries`, `ai_insights` — each must show **RLS enabled** with a policy. If any is missing, open the SQL Editor and run the RLS block from `Anicca/Resources/SupabaseSetup.md`.
-  **Done when:** all 4 tables show RLS + a policy.
+- [ ] **0.2 Confirm Row Level Security is ON** ⏱ 5 min
+  **Do:** [Supabase dashboard](https://supabase.com/dashboard) → your project → Table Editor. Check `profiles`, `check_ins`, `emotion_entries` — each must show **RLS enabled** with a policy. If any is missing, open the SQL Editor and run the RLS block from `Anicca/Resources/SupabaseSetup.md`. (A leftover `ai_insights` table is no longer used; enable RLS on it too, or drop it.)
+  **Done when:** all 3 tables show RLS + a policy.
   *Why: the anon key is public by design — RLS is the only wall around user journals.*
 
 ---
@@ -71,7 +63,7 @@ Claude already fixed in the `claude/project-status-app-store-a7257b` branch: bun
 
 ---
 
-## Phase 3 — Backend switch-on 🧑 ⏱ ~30 min
+## Phase 3 — Backend switch-on 🧑 ⏱ ~35 min
 
 - [ ] **3.1 Install + log in to the Supabase CLI** ⏱ 5 min
   ```bash
@@ -100,6 +92,11 @@ Claude already fixed in the `claude/project-status-app-store-a7257b` branch: bun
 - [ ] **3.5 Point Google sign-in at the new bundle ID** ⏱ 10 min
   **Do:** [Google Cloud console → Credentials](https://console.cloud.google.com/apis/credentials). If your iOS OAuth client's bundle ID isn't `com.screenseiji.anicca`, create a new **iOS** OAuth client with it. Put the client ID in `Secrets.xcconfig` as `GOOGLE_CLIENT_ID` and its reversed form (`com.googleusercontent.apps.…`) as `GOOGLE_URL_SCHEME`. Add the client ID to the Supabase **Google** provider's Authorized Client IDs.
   **Done when:** all three places (Google console, Secrets.xcconfig, Supabase) agree.
+
+- [ ] **3.6 Send email links back into the app** ⏱ 5 min
+  **Do:** Supabase dashboard → Authentication → **URL Configuration**. Set **Site URL** to `https://anicca.lovable.app` and add `com.screenseiji.anicca://auth-callback` under **Redirect URLs**.
+  *Why: sign-up confirmation emails link to the Site URL unless the app's own link is allowed. Left at the default, they open `localhost:3000`, which is a dead page on a phone.*
+  **Done when:** a fresh email sign-up on a device shows "check your email", and tapping the link in that email opens Anicca signed in.
 
 ---
 
@@ -140,7 +137,7 @@ Claude already fixed in the `claude/project-status-app-store-a7257b` branch: bun
 ## Phase 5 — Legal pages 🧑 ⏱ ~30 min
 
 - [ ] **5.1 Audit the privacy policy** ⏱ 15 min
-  **Do:** Open https://anicca.lovable.app/privacy and check it clearly states: what's collected (email, name, journal text, emotion logs) · **that free-text entries are sent to Google's Gemini API for analysis** · storage on Supabase · that the account can be deleted in-app and what deletion removes · a contact email. Fix the page if anything's missing — the Lovable host itself is fine; Apple checks content, not domains.
+  **Do:** Open https://anicca.lovable.app/privacy and check it clearly states: what's collected (email, name, journal text, emotion logs) · storage on Supabase · that emotion mapping and reflections happen on the device (no AI or third-party text processing — if the page still mentions Gemini, remove that) · that the account can be deleted in-app and what deletion removes · a contact email. Fix the page if anything's missing — the Lovable host itself is fine; Apple checks content, not domains.
   **Done when:** every item above is on the page.
 
 - [ ] **5.2 Audit the terms** ⏱ 10 min
@@ -154,7 +151,7 @@ Claude already fixed in the `claude/project-status-app-store-a7257b` branch: bun
 
 ## Phase 6 — First TestFlight 🧑 ⏱ ~60 min + processing
 
-- [ ] **6.1 Final secrets check** ⏱ 3 min — `Secrets.xcconfig` has: the NEW Gemini key (0.3), the `appl_…` RevenueCat key (4.5), both Google values (3.5).
+- [ ] **6.1 Final secrets check** ⏱ 3 min — `Secrets.xcconfig` has: the `appl_…` RevenueCat key (4.5), both Google values (3.5).
 
 - [ ] **6.2 Regenerate + open** ⏱ 2 min — `./setup.sh`, open Xcode.
 
@@ -193,7 +190,7 @@ Claude already fixed in the `claude/project-status-app-store-a7257b` branch: bun
 - [ ] **7.4 Age rating** ⏱ 5 min — questionnaire answers are all "None" (including Medical/Treatment Information — the app gives no medical advice) → rating 4+.
 
 - [ ] **7.5 App Review info + demo account** ⏱ 10 min
-  **Do:** Create a demo email account, seed 8–10 check-ins, then in RevenueCat (Customers → find the user → grant entitlement `pro`) so reviewers can see gated features. Enter the credentials in App Review Information, with notes: where the paywall is, that free-text is analyzed by Gemini, and that Delete Account requires re-authentication.
+  **Do:** Create a demo email account, seed 8–10 check-ins, then in RevenueCat (Customers → find the user → grant entitlement `pro`) so reviewers can see gated features. Enter the credentials in App Review Information, with notes: where the paywall is, that free-text is matched to emotions on device (no AI), and that Delete Account requires re-authentication.
 
 - [ ] **7.6 Submit** ⏱ 10 min
   **Do:** Version page → select the TestFlight build → confirm the 4 subscriptions are attached to this first submission → pricing **Free** (with in-app purchases) → availability → **Submit for Review**.
@@ -203,4 +200,4 @@ Claude already fixed in the `claude/project-status-app-store-a7257b` branch: bun
 
 ## Parking lot — after approval, not before
 
-Deliberately deferred; none block submission: circumplex emotion library (SS-6) · weekly-summary enrichment (SS-8) · timeline calendar grid (SS-9) · proxy Gemini through a Supabase edge function so the key leaves the app binary, and revisit the `BLOCK_NONE` safety settings · server-side validation of re-auth tokens in delete-account · swipe-to-delete in Insights is a silent no-op (needs a `List`) · the 25-check-in warning is never shown · email confirmations · tests + CI.
+Deliberately deferred; none block submission: circumplex emotion library (SS-6) · weekly-summary enrichment (SS-8) · timeline calendar grid (SS-9) · server-side validation of re-auth tokens in delete-account · swipe-to-delete in Insights is a silent no-op (needs a `List`) · the 25-check-in warning is never shown · email confirmations · tests + CI.

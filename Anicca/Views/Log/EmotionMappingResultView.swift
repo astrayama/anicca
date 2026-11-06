@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Mode 1 confirmation screen — shown after Gemini maps free text to emotions.
+/// Mode 1 confirmation screen — shown after `EmotionMatcher` maps free text to emotions.
 /// Users can review, adjust intensities, remove emotions, or add more before saving.
 struct EmotionMappingResultView: View {
     @ObservedObject var viewModel: LogViewModel

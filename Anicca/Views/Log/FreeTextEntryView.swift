@@ -1,10 +1,14 @@
 import SwiftUI
 
 /// Mode 1 — Default check-in entry screen.
-/// Shows a large text input and maps free text to emotions via Gemini Flash.
+/// Shows a large text input and maps free text to emotions on device (`EmotionMatcher`).
 struct FreeTextEntryView: View {
     @ObservedObject var viewModel: LogViewModel
     @FocusState private var isTextFocused: Bool
+
+    private var isTextEmpty: Bool {
+        viewModel.freeText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
 
     var body: some View {
         ZStack {
@@ -56,23 +60,17 @@ struct FreeTextEntryView: View {
                     VStack(spacing: AniccaTheme.Spacing.s12) {
                         Button {
                             isTextFocused = false
-                            Task { await viewModel.mapFreeText() }
+                            withAnimation(AniccaTheme.springAnimation) {
+                                viewModel.mapFreeText()
+                            }
                         } label: {
                             HStack(spacing: AniccaTheme.Spacing.s8) {
-                                if viewModel.isMappingText {
-                                    ProgressView()
-                                        .tint(.white)
-                                        .scaleEffect(0.9)
-                                    Text("Reading your feelings...")
-                                } else {
-                                    Text("Map my feelings")
-                                    Image(systemName: "arrow.right")
-                                }
+                                Text("Map my feelings")
+                                Image(systemName: "arrow.right")
                             }
                         }
-                        .buttonStyle(PrimaryButtonStyle(disabled: viewModel.freeText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || viewModel.isMappingText))
-                        .disabled(viewModel.freeText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || viewModel.isMappingText)
-                        .animation(AniccaTheme.springAnimation, value: viewModel.isMappingText)
+                        .buttonStyle(PrimaryButtonStyle(disabled: isTextEmpty))
+                        .disabled(isTextEmpty)
 
                         Button {
                             viewModel.entryMode = .browse(prefillSearch: "")

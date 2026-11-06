@@ -23,12 +23,10 @@ final class InsightsViewModel: ObservableObject {
     @Published var timeRange: InsightsTimeRange = .week
     @Published var radarAllTime: Bool = false
     @Published var checkIns: [CheckIn] = []
-    @Published var aiInsight: AIInsight?
-    @Published var aiLoading: Bool = false
-    @Published var aiError: String?
 
     private let checkInService = CheckInService.shared
     private let insightsService = InsightsService()
+    private let reflectionService = ReflectionService()
     private let auth = AuthService.shared
 
     var filteredEntries: [EmotionEntry] {
@@ -92,23 +90,10 @@ final class InsightsViewModel: ObservableObject {
         }
     }
 
-    // MARK: - AI
+    // MARK: - Weekly Reflection
 
-    func loadAIInsight() async {
-        guard let user = auth.currentUser, user.planTier.isPaid else { return }
-        guard let dominant = dominantCenter ?? insightsService.dominantCenter(in: filteredEntries) else { return }
-        aiLoading = true
-        aiError = nil
-        defer { aiLoading = false }
-        do {
-            let insight = try await AIService.shared.generateWeeklyInsight(
-                userId: user.id,
-                entries: filteredEntries,
-                dominantCenter: dominant
-            )
-            self.aiInsight = insight
-        } catch {
-            self.aiError = Strings.Errors.aiUnavailable
-        }
+    /// Hand-written reflection on the last 7 days (nil until there's a check-in this week).
+    var weeklyReflection: WeeklyReflection? {
+        reflectionService.weeklyReflection(checkIns: checkIns)
     }
 }

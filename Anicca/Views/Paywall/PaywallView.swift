@@ -85,7 +85,7 @@ struct PaywallView: View {
             featureRow("7-day timeline", free: "✓", pro: "✓")
             featureRow("14-day + Monthly timeline", free: "—", pro: "✓")
             featureRow("Weekly summary", free: "—", pro: "✓")
-            featureRow("AI insight (Gemini)", free: "—", pro: "✓")
+            featureRow("Weekly reflection", free: "—", pro: "✓")
             featureRow("Check-in streak tracking", free: "—", pro: "✓")
             featureRow("Reminder scheduling", free: "✓", pro: "✓")
             featureRow("PDF export", free: "—", pro: "✓")
