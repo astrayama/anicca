@@ -62,21 +62,35 @@ alter table emotion_entries enable row level security;
 alter table ai_insights enable row level security;
 
 -- RLS Policies (users can only access their own data)
-create policy "Users can manage own profile" on profiles for all using (auth.uid() = id);
-create policy "Users can manage own check-ins" on check_ins for all using (auth.uid() = user_id);
-create policy "Users can manage own entries" on emotion_entries for all using (auth.uid() = user_id);
-create policy "Users can manage own insights" on ai_insights for all using (auth.uid() = user_id);
+create policy "Users can manage own profile" on profiles for all using (auth.uid() = id) with check (auth.uid() = id);
+create policy "Users can manage own check-ins" on check_ins for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+create policy "Users can manage own entries" on emotion_entries for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+create policy "Users can manage own insights" on ai_insights for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 ```
 
 ### Auth providers
 
 1. **Email**: enable in Supabase Auth → Providers → Email. Configure your password reset redirect URL.
-2. **Apple**: enable Apple provider. Add your bundle ID (`com.screensagestudios.anicca`) to the Apple provider configuration.
-3. **Google**: enable Google provider. Add your OAuth 2.0 Client ID. Put the iOS client ID in `Secrets.xcconfig` as `GOOGLE_CLIENT_ID` and the reversed client ID as `GOOGLE_URL_SCHEME`.
+2. **Apple**: enable Apple provider. Add your bundle ID (`com.screenseiji.anicca`) to the Apple provider configuration's authorized client IDs.
+3. **Google**: enable Google provider. Create an **iOS** OAuth 2.0 client in Google Cloud console for bundle ID `com.screenseiji.anicca` and add its client ID to the Supabase Google provider's authorized client IDs. Put the iOS client ID in `Secrets.xcconfig` as `GOOGLE_CLIENT_ID` and the reversed client ID as `GOOGLE_URL_SCHEME`.
+
+### Edge Functions
+
+The `delete-account` function (in `supabase/functions/delete-account/`) performs the actual `auth.users` deletion for the in-app "Delete My Account" flow. **It must be deployed to the hosted project or account deletion will fail** — an automatic App Review rejection under Guideline 5.1.1(v).
+
+```bash
+# from the repo root, with the Supabase CLI logged in and linked to the project
+supabase link --project-ref YOUR-PROJECT-REF
+supabase functions deploy delete-account
+```
+
+The function reads `SUPABASE_URL`, `SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY` from the function environment. All three are provided automatically by the Supabase platform — no manual secrets setup is needed for a standard deploy.
+
+Verify after deploying: sign in as a throwaway account in the app, delete it from Settings, and confirm the user is gone from **Auth → Users** in the dashboard (cascade removes the profile and check-ins).
 
 ## RevenueCat
 
-1. Create a RevenueCat account at https://app.revenuecat.com and add a new app for your bundle ID `com.screensagestudios.anicca`.
+1. Create a RevenueCat account at https://app.revenuecat.com and add a new app for your bundle ID `com.screenseiji.anicca`.
 2. Set your **public iOS API key** in `Secrets.xcconfig` as `REVENUECAT_API_KEY`.
 
 ### Entitlements

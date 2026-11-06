@@ -17,6 +17,7 @@ final class PaywallViewModel: ObservableObject {
     @Published var isWorking: Bool = false
     @Published var errorMessage: String?
     @Published var purchaseCompleted: Bool = false
+    @Published var isLoadingOfferings: Bool = true
 
     @Published var packages: [Package] = []
 
@@ -36,18 +37,23 @@ final class PaywallViewModel: ObservableObject {
         packages.first { $0.storeProduct.productIdentifier == "anicca_bundle_annual" }
     }
 
-    var proPriceString: String {
-        let pkg = (selectedInterval == .monthly ? proMonthlyPackage : proAnnualPackage)
-        return formatPackage(pkg, fallback: selectedInterval == .monthly ? "$4.99/mo" : "$3.33/mo, billed annually")
+    // Prices come only from loaded StoreKit products — never hardcoded fallbacks,
+    // so the paywall can't show a price the store won't actually charge.
+    var proPriceString: String? {
+        formatPackage(selectedInterval == .monthly ? proMonthlyPackage : proAnnualPackage)
     }
 
-    var bundlePriceString: String {
-        let pkg = (selectedInterval == .monthly ? bundleMonthlyPackage : bundleAnnualPackage)
-        return formatPackage(pkg, fallback: selectedInterval == .monthly ? "$8.99/mo" : "$5.83/mo, billed annually")
+    var bundlePriceString: String? {
+        formatPackage(selectedInterval == .monthly ? bundleMonthlyPackage : bundleAnnualPackage)
     }
 
-    private func formatPackage(_ pkg: Package?, fallback: String) -> String {
-        guard let pkg else { return fallback }
+    var offeringsAvailable: Bool {
+        proMonthlyPackage != nil || proAnnualPackage != nil
+            || bundleMonthlyPackage != nil || bundleAnnualPackage != nil
+    }
+
+    private func formatPackage(_ pkg: Package?) -> String? {
+        guard let pkg else { return nil }
         let price = pkg.storeProduct.localizedPriceString
         switch selectedInterval {
         case .monthly: return "\(price)/mo"
@@ -55,9 +61,24 @@ final class PaywallViewModel: ObservableObject {
         }
     }
 
+    /// App Review requires the paywall to state each subscription's title, length, and price.
+    var subscriptionDisclosureLines: [String] {
+        let entries: [(String, Package?)] = [
+            ("Anicca Pro, 1 month", proMonthlyPackage),
+            ("Anicca Pro, 1 year", proAnnualPackage),
+            ("Pro + Yggdrasil Bundle, 1 month", bundleMonthlyPackage),
+            ("Pro + Yggdrasil Bundle, 1 year", bundleAnnualPackage)
+        ]
+        return entries.compactMap { name, pkg in
+            pkg.map { "\(name): \($0.storeProduct.localizedPriceString)" }
+        }
+    }
+
     // MARK: - Load
 
     func load() async {
+        isLoadingOfferings = true
+        defer { isLoadingOfferings = false }
         await revenueCat.fetchOfferings()
         if let current = revenueCat.currentOfferings?.current {
             self.packages = current.availablePackages

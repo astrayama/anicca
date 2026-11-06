@@ -76,7 +76,7 @@ actor AIService {
             await cache(parsed, userId: userId, weekStart: weekStart)
             return parsed
         } catch {
-            print("🔴 AIService.generateWeeklyInsight failed: \(error). Falling back to handcrafted insight.")
+            debugLog("🔴 AIService.generateWeeklyInsight failed: \(error). Falling back to handcrafted insight.")
             // Fallback to high-quality handcrafted weekly insights if the Gemini API key is invalid/unavailable
             return generateHandcraftedWeeklyInsight(dominantCenter: dominantCenter, entries: entries, weekStart: weekStart)
         }

@@ -1,6 +1,7 @@
 import Foundation
 import SwiftUI
 import UIKit
+import AuthenticationServices
 
 @MainActor
 final class AuthViewModel: ObservableObject {
@@ -107,19 +108,41 @@ final class AuthViewModel: ObservableObject {
         }
     }
 
-    func signInWithApple() async {
-        isWorking = true
-        defer { isWorking = false }
-        do {
-            guard let anchor = topWindow() else {
+    func prepareAppleSignIn(_ request: ASAuthorizationAppleIDRequest) {
+        auth.prepareAppleSignIn(request: request)
+    }
+
+    func handleAppleSignIn(_ result: Result<ASAuthorization, Error>) {
+        switch result {
+        case .failure(let error):
+            let nsError = error as NSError
+            if nsError.domain == ASAuthorizationError.errorDomain,
+               nsError.code == ASAuthorizationError.canceled.rawValue {
+                return
+            }
+            generalError = Strings.Errors.generic
+        case .success(let authorization):
+            guard
+                let credential = authorization.credential as? ASAuthorizationAppleIDCredential,
+                let tokenData = credential.identityToken,
+                let identityToken = String(data: tokenData, encoding: .utf8)
+            else {
                 generalError = Strings.Errors.generic
                 return
             }
-            try await auth.signInWithApple(presentationContext: anchor)
-        } catch let error as AppError {
-            generalError = error.errorDescription
-        } catch {
-            generalError = Strings.Errors.generic
+            let email = credential.email
+            let fullName = credential.fullName
+            Task {
+                isWorking = true
+                defer { isWorking = false }
+                do {
+                    try await auth.signInWithApple(identityToken: identityToken, email: email, fullName: fullName)
+                } catch let error as AppError {
+                    generalError = error.errorDescription
+                } catch {
+                    generalError = Strings.Errors.generic
+                }
+            }
         }
     }
 
