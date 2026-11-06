@@ -166,7 +166,7 @@ struct SettingsView: View {
             if entitlements.planTier == .free {
                 VStack(alignment: .leading, spacing: AniccaTheme.Spacing.s8) {
                     Text(Strings.Settings.upgradeToPro).anicca(.headline)
-                    Text("Unlock AI insights, full timeline history, and unlimited check-ins.")
+                    Text("Unlock weekly reflections, full timeline history, and unlimited check-ins.")
                         .anicca(.body)
                     Button("See Plans →") { showPaywall = true }
                         .buttonStyle(PrimaryButtonStyle())

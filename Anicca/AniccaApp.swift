@@ -107,7 +107,11 @@ struct AniccaApp: App {
             }
             .modelContainer(modelContainer)
             .onOpenURL { url in
-                GIDSignIn.sharedInstance.handle(url)
+                if url.scheme == AppConfig.authCallbackURL.scheme, url.host == AppConfig.authCallbackURL.host {
+                    Task { await auth.handleAuthCallback(url) }
+                } else {
+                    GIDSignIn.sharedInstance.handle(url)
+                }
             }
         }
     }

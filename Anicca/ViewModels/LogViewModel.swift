@@ -20,10 +20,8 @@ final class LogViewModel: ObservableObject {
     @Published var touchedIntensity: Set<Emotion> = []
     @Published var note: String = ""
 
-    // MARK: - Mode 1 — Free Text AI Mapping
+    // MARK: - Mode 1 — Free Text Mapping (on-device EmotionMatcher)
     @Published var freeText: String = ""
-    @Published var isMappingText: Bool = false
-    @Published var mappingError: String? = nil
     @Published var mappedEmotions: [MappedEmotion] = []
 
     // MARK: - Navigation
@@ -118,31 +116,22 @@ final class LogViewModel: ObservableObject {
         showIntensitySheet = true
     }
 
-    // MARK: - Mode 1: Free-text AI Mapping
+    // MARK: - Mode 1: Free-text Mapping
 
-    func mapFreeText() async {
+    /// Maps the typed text to emotions on device. No match → Browse, prefilled with
+    /// the text when it's short enough to work as a search.
+    func mapFreeText() {
         let text = freeText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { return }
-        isMappingText = true
-        mappingError = nil
-        defer { isMappingText = false }
 
-        do {
-            let mapped = try await EmotionMappingService.shared.mapFreeText(text)
-            if mapped.isEmpty {
-                debugLog("⚠️ mapFreeText: Returned empty list of mapped emotions.")
-                let wordCount = text.split { $0.isWhitespace || $0.isNewline }.count
-                let prefill = wordCount <= 2 ? text : ""
-                entryMode = .browse(prefillSearch: prefill)
-            } else {
-                self.mappedEmotions = mapped
-                entryMode = .mappingResult
-            }
-        } catch {
-            debugLog("🔴 mapFreeText failed: \(error). Falling back to search prefill.")
+        let mapped = EmotionMatcher.match(text)
+        if mapped.isEmpty {
             let wordCount = text.split { $0.isWhitespace || $0.isNewline }.count
             let prefill = wordCount <= 2 ? text : ""
             entryMode = .browse(prefillSearch: prefill)
+        } else {
+            mappedEmotions = mapped
+            entryMode = .mappingResult
         }
     }
 
@@ -174,7 +163,6 @@ final class LogViewModel: ObservableObject {
         freeText = ""
         searchText = ""
         note = ""
-        mappingError = nil
         showIntensitySheet = false
         entryMode = .freeText
     }

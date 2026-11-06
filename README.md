@@ -2,13 +2,13 @@
 
 > Read your energy. Understand yourself.
 
-A chakra-inspired mood & energy tracking app for iOS — SwiftUI, Supabase, RevenueCat, Gemini Flash.
+A chakra-inspired mood & energy tracking app for iOS — SwiftUI, Supabase, RevenueCat.
 
 ## Stack
 
 - **iOS 17.0+**, SwiftUI, SwiftData
 - **Auth & Backend:** Supabase (email, Apple, Google)
-- **AI:** Google Gemini Flash 1.5
+- **Emotion mapping & reflections:** on-device and rule-based (no AI, no third-party text processing)
 - **Subscriptions:** RevenueCat
 - **Notifications:** UNUserNotificationCenter (local)
 
@@ -42,8 +42,8 @@ Anicca/
 ├── AniccaApp.swift           Entry point + app delegate
 ├── Config/                   AppConfig, SupabaseConfig, Strings
 ├── Theme/                    AniccaTheme (single source of truth)
-├── Models/                   EnergyCenter, Emotion, CheckIn, UserProfile, AIInsight, AppError, EmotionLibrary
-├── Services/                 Auth, CheckIn, Insights, AI (Gemini), Notifications, RevenueCat, Entitlements, Export, Yggdrasil stub
+├── Models/                   EnergyCenter, Emotion, CheckIn, UserProfile, WeeklyReflection, AppError, EmotionLibrary
+├── Services/                 Auth, CheckIn, Insights, EmotionMatcher, Reflection, Notifications, RevenueCat, Entitlements, Export, Yggdrasil stub
 ├── ViewModels/               One per feature surface
 ├── Views/
 │   ├── Auth/                 Splash, AuthView
@@ -64,7 +64,6 @@ All secrets live in `Secrets.xcconfig` at the project root. The file is gitignor
 
 - `SUPABASE_URL`
 - `SUPABASE_ANON_KEY`
-- `GEMINI_API_KEY`
 - `REVENUECAT_API_KEY`
 - `GOOGLE_CLIENT_ID` (optional — for Google Sign-In)
 - `GOOGLE_URL_SCHEME` (optional — reversed Google client ID)
@@ -73,4 +72,4 @@ These are surfaced through `Info.plist` substitution and read in `AppConfig.swif
 
 ## Free vs Pro
 
-Free users get 30 check-ins/month, the radar chart, and a 7-day timeline. Pro unlocks unlimited check-ins, the AI weekly insight (Gemini), 14-day/monthly timeline, weekly summary, streak tracking, reminders, and PDF export. Bundle adds the Yggdrasil integration (interface defined; implementation reserved for a future release).
+Free users get 30 check-ins/month, the radar chart, and a 7-day timeline. Pro unlocks unlimited check-ins, the weekly reflection, 14-day/monthly timeline, weekly summary, streak tracking, reminders, and PDF export. Bundle adds the Yggdrasil integration (interface defined; implementation reserved for a future release).

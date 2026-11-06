@@ -6,13 +6,11 @@ struct HomeView: View {
     @Binding var selectedTab: MainTab
     @State private var checkIns: [CheckIn] = []
     @State private var suggestions: [String] = []
-    @State private var suggestionsLoading: Bool = false
-    @State private var suggestionsError: String?
-    @State private var isUsingAI = true
     @State private var underactiveCenter: EnergyCenter?
     @State private var showPaywall = false
 
     private let insights = InsightsService()
+    private let reflections = ReflectionService()
     private let service = CheckInService.shared
 
     var body: some View {
@@ -176,16 +174,6 @@ struct HomeView: View {
                         Button("Unlock with Pro →") { showPaywall = true }
                             .buttonStyle(SecondaryButtonStyle())
                     }
-                } else if suggestionsLoading {
-                    HStack { ProgressView(); Text("Finding a practice…").anicca(.subheadline) }
-                } else if let error = suggestionsError {
-                    VStack(alignment: .leading, spacing: AniccaTheme.Spacing.s8) {
-                        Text(error).anicca(.body)
-                        Button("Try again") {
-                            Task { await loadSuggestions() }
-                        }
-                        .buttonStyle(SecondaryButtonStyle())
-                    }
                 } else if let center = underactiveCenter, !suggestions.isEmpty {
                     VStack(alignment: .leading, spacing: AniccaTheme.Spacing.s8) {
                         HStack(spacing: AniccaTheme.Spacing.s8) {
@@ -198,7 +186,7 @@ struct HomeView: View {
                                 Text(practice).anicca(.body)
                             }
                         }
-                        Text(isUsingAI ? "Powered by Gemini" : "Handcrafted Practice").anicca(.caption)
+                        Text("A new practice rotates in each day.").anicca(.caption)
                     }
                 } else {
                     Text("Log a few check-ins to receive tailored practices.").anicca(.body)
@@ -240,15 +228,15 @@ struct HomeView: View {
         guard let user = auth.currentUser else { return }
         await service.loadRemoteCheckIns(userId: user.id)
         self.checkIns = service.fetchLocalCheckIns(userId: user.id)
-        await loadSuggestions()
+        loadSuggestions()
     }
 
-    private func loadSuggestions() async {
+    /// Picks the most underactive center and today's practices for it from the hand-written pool.
+    private func loadSuggestions() {
         guard entitlements.isPro else { return }
-        suggestionsError = nil
         let allEntries = checkIns.flatMap { $0.entries }
         guard !allEntries.isEmpty else { return }
- 
+
         var lowest: (EnergyCenter, Double) = (.heart, .infinity)
         for center in EnergyCenter.allCases {
             let score = insights.balanceScore(for: center, in: allEntries)
@@ -257,18 +245,7 @@ struct HomeView: View {
             }
         }
         underactiveCenter = lowest.0
-        suggestionsLoading = true
-        defer { suggestionsLoading = false }
-        do {
-            let recent = insights.entriesInLast(days: 14, from: checkIns)
-            let result = try await AIService.shared.generateCenterSuggestion(for: lowest.0, recentEntries: recent)
-            self.suggestions = result
-            self.isUsingAI = true
-        } catch {
-            // Fallback to high-quality handcrafted suggestions if the Gemini API key is invalid/unavailable
-            self.suggestions = lowest.0.fallbackSuggestions
-            self.isUsingAI = false
-        }
+        suggestions = reflections.dailyPractices(for: lowest.0)
     }
 
     private func streak() -> Int {

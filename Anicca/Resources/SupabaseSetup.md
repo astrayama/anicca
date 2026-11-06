@@ -43,34 +43,22 @@ create table emotion_entries (
   created_at timestamptz default now()
 );
 
--- ai_insights table (caches AI responses per user per week)
-create table ai_insights (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid references profiles(id) on delete cascade not null,
-  week_start date not null,
-  insight_text text not null,
-  dominant_center text,
-  suggested_practices text[],
-  created_at timestamptz default now(),
-  unique(user_id, week_start)
-);
-
 -- Enable RLS on all tables
 alter table profiles enable row level security;
 alter table check_ins enable row level security;
 alter table emotion_entries enable row level security;
-alter table ai_insights enable row level security;
 
 -- RLS Policies (users can only access their own data)
 create policy "Users can manage own profile" on profiles for all using (auth.uid() = id) with check (auth.uid() = id);
 create policy "Users can manage own check-ins" on check_ins for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 create policy "Users can manage own entries" on emotion_entries for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
-create policy "Users can manage own insights" on ai_insights for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 ```
+
+> **Legacy `ai_insights` table:** earlier versions cached Gemini weekly insights in an `ai_insights` table. The app no longer reads or writes it (reflections are now built on device). Existing projects can leave it in place, or drop it once the old rows aren't needed: `drop table ai_insights;`
 
 ### Auth providers
 
-1. **Email**: enable in Supabase Auth → Providers → Email. Configure your password reset redirect URL.
+1. **Email**: enable in Supabase Auth → Providers → Email. Then in Authentication → URL Configuration, set **Site URL** to `https://anicca.lovable.app` and add `com.screenseiji.anicca://auth-callback` to **Redirect URLs**. The app sends that URL with every sign-up, so the confirmation link opens Anicca and signs the user in; if it isn't on the list, Supabase falls back to the Site URL (by default `http://localhost:3000`, a dead page on a phone). With "Confirm email" on, the app shows a "check your email" message after sign-up and creates the `profiles` row on the first signed-in launch.
 2. **Apple**: enable Apple provider. Add your bundle ID (`com.screenseiji.anicca`) to the Apple provider configuration's authorized client IDs.
 3. **Google**: enable Google provider. Create an **iOS** OAuth 2.0 client in Google Cloud console for bundle ID `com.screenseiji.anicca` and add its client ID to the Supabase Google provider's authorized client IDs. Put the iOS client ID in `Secrets.xcconfig` as `GOOGLE_CLIENT_ID` and the reversed client ID as `GOOGLE_URL_SCHEME`.
 
@@ -116,8 +104,3 @@ Create the four auto-renewing subscriptions in App Store Connect, then attach ea
 ### Offering
 
 Create a RevenueCat offering called `default` and attach all four packages. The Paywall uses these IDs directly — keep them stable.
-
-## Gemini
-
-1. Get a Gemini API key from https://aistudio.google.com.
-2. Set it in `Secrets.xcconfig` as `GEMINI_API_KEY`.

@@ -6,9 +6,7 @@ enum AppError: LocalizedError, Equatable {
     case notAuthenticated
     case profileNotFound
     case syncFailed
-    case aiUnavailable
-    case aiParseError
-    case aiRateLimited
+    case rateLimited
     case purchaseCancelled
     case purchaseFailed(String)
     case nothingToRestore
@@ -24,9 +22,7 @@ enum AppError: LocalizedError, Equatable {
         case .notAuthenticated: return "Please sign in to continue."
         case .profileNotFound: return "We couldn't find your profile. Try signing in again."
         case .syncFailed: return "Your check-in was saved locally and will sync when you're back online."
-        case .aiUnavailable: return Strings.Errors.aiUnavailable
-        case .aiParseError: return "Your insight is taking a moment. Try again shortly."
-        case .aiRateLimited: return "Too many insight requests right now. Try again in a few minutes."
+        case .rateLimited: return "Too many attempts right now. Try again in a few minutes."
         case .purchaseCancelled: return Strings.Paywall.purchaseCancelled
         case .purchaseFailed(let msg): return msg
         case .nothingToRestore: return Strings.Paywall.nothingToRestore
@@ -44,6 +40,9 @@ enum SupabaseErrorMapper {
         if raw.contains("network") || raw.contains("offline") || raw.contains("connection") {
             return .network
         }
+        if raw.contains("email not confirmed") {
+            return .authFailed(Strings.Auth.confirmEmailFirst)
+        }
         if raw.contains("invalid login") || raw.contains("invalid_credentials") || raw.contains("incorrect") {
             return .authFailed("Email or password is incorrect.")
         }
@@ -54,7 +53,7 @@ enum SupabaseErrorMapper {
             return .authFailed(Strings.Auth.passwordTooShort)
         }
         if raw.contains("rate limit") {
-            return .aiRateLimited
+            return .rateLimited
         }
         return .unknown(Strings.Errors.generic)
     }

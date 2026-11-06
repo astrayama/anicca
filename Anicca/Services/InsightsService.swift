@@ -32,7 +32,14 @@ struct InsightsService {
         for entry in entries {
             totals[entry.energyCenter, default: 0] += entry.intensity
         }
-        return totals.max { $0.value < $1.value }?.key
+        // Ties go to the center listed first (Root → Crown) so the answer doesn't depend on
+        // dictionary order and stays the same between launches.
+        let order = EnergyCenter.allCases
+        return totals.max { a, b in
+            a.value != b.value
+                ? a.value < b.value
+                : (order.firstIndex(of: a.key) ?? 0) > (order.firstIndex(of: b.key) ?? 0)
+        }?.key
     }
 
     // MARK: - Streak
@@ -114,7 +121,13 @@ struct InsightsService {
                 let center = list.first?.energyCenter ?? .heart
                 return (name, list.count, avg, center)
             }
-            .sorted { $0.1 > $1.1 }
+            // Most logged first; ties by stronger average intensity, then by name, so the
+            // order is stable between launches.
+            .sorted { a, b in
+                if a.1 != b.1 { return a.1 > b.1 }
+                if a.2 != b.2 { return a.2 > b.2 }
+                return a.0 < b.0
+            }
             .prefix(limit)
             .map { (name: $0.0, count: $0.1, avgIntensity: $0.2, center: $0.3) }
     }
