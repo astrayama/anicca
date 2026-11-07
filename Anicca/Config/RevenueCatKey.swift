@@ -18,11 +18,11 @@ enum RevenueCatKey {
         return apple
     }
 
-    /// The RevenueCat customer ID for a signed-in user. Supabase user IDs reach the app both as
-    /// UPPERCASE (`UUID.uuidString`) and lowercase (Postgres rows); RevenueCat would treat those as
-    /// two customers, and a purchase made as one would be invisible to the other.
+    /// The RevenueCat customer ID for a signed-in user: the app's one spelling of the Supabase ID
+    /// (`UserID.normalized`). RevenueCat treats different casings as different customers, and a
+    /// purchase made as one would be invisible to the other.
     static func appUserID(forUserID userID: String) -> String {
-        userID.lowercased()
+        UserID.normalized(userID)
     }
 
     /// Blank values and the template's `YOUR_…` placeholders aren't keys.
