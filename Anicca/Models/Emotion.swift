@@ -30,14 +30,14 @@ struct Emotion: Identifiable, Hashable, Sendable {
     init(
         name: String,
         center: EnergyCenter,
-        zone: EmotionZone? = nil,
+        zone: EmotionZone,
         valence: EmotionValence,
         definition: String,
         synonyms: [String] = []
     ) {
         self.name = name
         self.center = center
-        self.zone = zone ?? EmotionZone.interim(name: name, valence: valence)
+        self.zone = zone
         self.valence = valence
         self.definition = definition
         self.synonyms = synonyms

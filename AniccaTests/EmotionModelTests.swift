@@ -2,10 +2,27 @@ import XCTest
 
 final class EmotionModelTests: XCTestCase {
 
+    // MARK: - Library rules
+
+    func testLibraryKeepsItsRules() {
+        XCTAssertEqual(EmotionLibrary.integrityProblems(in: EmotionLibrary.all), [])
+    }
+
+    func testLibraryHasSeventyWords() {
+        XCTAssertEqual(EmotionLibrary.all.count, 70)
+    }
+
+    func testIntegrityCheckCatchesBrokenRules() {
+        var words = EmotionLibrary.all
+        words[0] = Emotion(name: "Anxious", center: .root, zone: .calm, valence: .negative, definition: "x")
+        let problems = EmotionLibrary.integrityProblems(in: words)
+        XCTAssertTrue(problems.contains { $0.contains("Anxious is negative but sits in calm") }, "\(problems)")
+    }
+
     // MARK: - Ids
 
     func testIdIsCenterAndName() {
-        let emotion = Emotion(name: "Anxious", center: .root, valence: .negative, definition: "x")
+        let emotion = Emotion(name: "Anxious", center: .root, zone: .charged, valence: .negative, definition: "x")
         XCTAssertEqual(emotion.id, "root::Anxious")
     }
 
@@ -15,10 +32,10 @@ final class EmotionModelTests: XCTestCase {
     }
 
     func testSameNameInDifferentCentersIsDifferent() {
-        let a = Emotion(name: "Open", center: .heart, valence: .neutral, definition: "x")
-        let b = Emotion(name: "Open", center: .crown, valence: .neutral, definition: "y")
+        let a = Emotion(name: "Open", center: .heart, zone: .steady, valence: .neutral, definition: "x")
+        let b = Emotion(name: "Open", center: .crown, zone: .steady, valence: .neutral, definition: "y")
         XCTAssertNotEqual(a, b)
-        XCTAssertEqual(a, Emotion(name: "Open", center: .heart, valence: .neutral, definition: "changed"))
+        XCTAssertEqual(a, Emotion(name: "Open", center: .heart, zone: .steady, valence: .neutral, definition: "changed"))
     }
 
     // MARK: - Zones
@@ -26,13 +43,6 @@ final class EmotionModelTests: XCTestCase {
     func testEveryZoneHasWords() {
         for zone in EmotionZone.allCases {
             XCTAssertFalse(EmotionLibrary.byZone[zone, default: []].isEmpty, "\(zone) is empty")
-        }
-    }
-
-    func testEveryWordAgreesWithItsZone() {
-        for emotion in EmotionLibrary.all {
-            XCTAssertTrue(emotion.zone.allowedValences.contains(emotion.valence),
-                          "\(emotion.name) is \(emotion.valence) but sits in \(emotion.zone)")
         }
     }
 
@@ -48,37 +58,57 @@ final class EmotionModelTests: XCTestCase {
 
     // MARK: - Old check-ins keep their valence
 
-    func testEveryV1WordResolvesToItsV1Valence() {
+    /// Kept words whose valence changed in v2 on purpose (approved Nov 7, 2026). Old check-ins
+    /// with these names follow the new valence.
+    private let intentionalValenceChanges: Set<String> = ["Curious"]
+
+    func testEveryV1WordStillResolves() {
         for entry in V1LibraryFixture.entries {
-            XCTAssertEqual(EmotionLibrary.valence(forStoredName: entry.name, center: entry.center), entry.valence,
-                           "\(entry.name) lost its valence")
+            let valence = EmotionLibrary.valence(forStoredName: entry.name, center: entry.center)
+            XCTAssertNotNil(valence, "\(entry.name) lost its valence")
+            if !intentionalValenceChanges.contains(entry.name) {
+                XCTAssertEqual(valence, entry.valence, "\(entry.name) changed valence")
+            }
         }
+    }
+
+    func testCuriousNowCountsAsPositive() {
+        XCTAssertEqual(EmotionLibrary.valence(forStoredName: "Curious", center: .thirdEye), .positive)
+    }
+
+    func testRemovedV1WordsResolveThroughTheFrozenTable() {
+        XCTAssertNil(EmotionLibrary.emotion(named: "Joyful", in: .sacral))
+        XCTAssertEqual(EmotionLibrary.valence(forStoredName: "Joyful", center: .sacral), .positive)
+        XCTAssertEqual(EmotionLibrary.valence(forStoredName: "Hollow", center: .crown), .negative)
+        XCTAssertEqual(EmotionLibrary.valence(forStoredName: "Yielding", center: .sacral), .neutral)
+    }
+
+    func testOldRootDisconnectedResolvesToTheCrownWord() {
+        XCTAssertNil(EmotionLibrary.emotion(named: "Disconnected", in: .root))
+        XCTAssertEqual(EmotionLibrary.valence(forStoredName: "Disconnected", center: .root), .negative)
     }
 
     func testStoredNamesAreCaseInsensitive() {
         XCTAssertEqual(EmotionLibrary.valence(forStoredName: "anxious", center: .root), .negative)
     }
 
-    func testWordStoredUnderAnotherCenterStillResolves() {
-        XCTAssertEqual(EmotionLibrary.valence(forStoredName: "Anxious", center: .crown), .negative)
-    }
-
     func testUnknownNameHasNoValence() {
         XCTAssertNil(EmotionLibrary.valence(forStoredName: "Xyzzy", center: .root))
     }
 
-    func testValenceTrendCountsStoredEntries() {
+    func testValenceTrendCountsOldAndNewEntries() {
         let checkInId = UUID()
         let entries = [
-            EmotionEntry(emotionName: "Anxious", energyCenter: .root, intensity: 3, checkInId: checkInId),
-            EmotionEntry(emotionName: "Curious", energyCenter: .thirdEye, intensity: 3, checkInId: checkInId),
-            EmotionEntry(emotionName: "Joyful", energyCenter: .sacral, intensity: 3, checkInId: checkInId),
-            EmotionEntry(emotionName: "Disconnected", energyCenter: .root, intensity: 3, checkInId: checkInId),
-            EmotionEntry(emotionName: "Xyzzy", energyCenter: .heart, intensity: 3, checkInId: checkInId),
+            EmotionEntry(emotionName: "Anxious", energyCenter: .root, intensity: 3, checkInId: checkInId),      // kept
+            EmotionEntry(emotionName: "Okay", energyCenter: .root, intensity: 3, checkInId: checkInId),         // new, neutral
+            EmotionEntry(emotionName: "Joyful", energyCenter: .sacral, intensity: 3, checkInId: checkInId),     // removed v1
+            EmotionEntry(emotionName: "Hollow", energyCenter: .crown, intensity: 3, checkInId: checkInId),      // removed v1
+            EmotionEntry(emotionName: "Disconnected", energyCenter: .root, intensity: 3, checkInId: checkInId), // old Root copy
+            EmotionEntry(emotionName: "Xyzzy", energyCenter: .heart, intensity: 3, checkInId: checkInId),       // unknown
         ]
         let trend = InsightsService().valenceTrend(in: entries)
         XCTAssertEqual(trend.positive, 1)
         XCTAssertEqual(trend.neutral, 1)
-        XCTAssertEqual(trend.negative, 2)
+        XCTAssertEqual(trend.negative, 3)
     }
 }

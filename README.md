@@ -49,7 +49,7 @@ Anicca/
 │   ├── Auth/                 Splash, AuthView
 │   ├── Onboarding/           OnboardingView (4 steps)
 │   ├── Home/                 HomeView
-│   ├── Log/                  LogView
+│   ├── Log/                  LogView, CheckInStartView, ZoneWordsView, CheckInReviewView
 │   ├── Insights/             InsightsView, RadarChartView, CheckInDetailView
 │   ├── Paywall/              PaywallView
 │   ├── Settings/             SettingsView

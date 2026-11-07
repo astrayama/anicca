@@ -773,20 +773,18 @@ SQL schema for `profiles`, `check_ins`, `emotion_entries`, `ai_insights`. RLS en
 
 ---
 
-### ✅ VIEW-04 — Log flow (coordinator + all sub-views)
+### ✅ VIEW-04 — Log flow (redesigned Nov 2026)
 
 **What was built**
-`LogView` routes between three modes (`LogEntryMode`):
-- `.freeText` → `FreeTextEntryView`: large TextEditor, auto-focus on appear (0.35s delay), "Map my feelings" CTA, "Browse emotions instead" link
-- `.mappingResult` → `EmotionMappingResultView`: `MappedEmotionCard` per Gemini result, dot intensity selector (1–5), "Add more" opens browse, "Looks right" → intensity sheet, "Start over" returns to freeText
-- `.browse(prefillSearch:)` → `EmotionBrowseView`: grouped by center with collapsible sections, search field
+One start screen instead of separate free-text and browse modes. `LogView` owns a `NavigationStack` path (`LogRoute`):
+- `CheckInStartView`: "How are you feeling?", a text field (one or two words filter live; a sentence offers "Map my feelings", matched on device), a "Recent" row built from local check-ins, and five energy zones (`ZoneGrid`).
+- `ZoneWordsView`: the zone's words grouped by energy center; long-press shows the definition.
+- `CheckInReviewView`: one row per picked word with optional 1–5 intensity dots (default 3, or the matcher's guess), an optional note, Save. Free-limit paywall check on save; success toast shows dominant center + streak; Save returns to the start screen.
 
-Intensity sheet (`IntensitySheetWrapper`): per-emotion sliders, optional note field, Save button (disabled until all emotions have had intensity confirmed). Free-limit paywall check on save. Success toast shows dominant center + streak.
-
-All state managed by `LogViewModel`.
+State lives in `LogViewModel` (`EmotionSelection`, `query`, `path`). Navigating never discards the check-in in progress; only Clear and Save do. Design and research: `docs/emotion-library-v2.md`.
 
 **Key files**
-`Views/Log/LogView.swift`, `Views/Log/FreeTextEntryView.swift`, `Views/Log/EmotionMappingResultView.swift`, `Views/Log/EmotionBrowseView.swift`, `ViewModels/LogViewModel.swift`
+`Views/Log/LogView.swift`, `Views/Log/CheckInStartView.swift`, `Views/Log/ZoneWordsView.swift`, `Views/Log/CheckInReviewView.swift`, `Views/Log/Components/`, `ViewModels/LogViewModel.swift`
 
 ---
 
@@ -838,7 +836,9 @@ Driven by `InsightsViewModel`.
 
 ---
 
-### 🔧 LOG-01 — Fix keyboard trap in FreeTextEntryView
+### ✅ LOG-01 — Fix keyboard trap in FreeTextEntryView
+
+**Done (Nov 2026):** the redesigned start screen never auto-focuses the text field and has a keyboard Done button; `FreeTextEntryView` was removed.
 
 **Problem**
 `FreeTextEntryView` auto-focuses the `TextEditor` 0.35 seconds after appearing. On the Log tab, this means the keyboard slides up immediately and there is no way to dismiss it or navigate back without submitting. Users get stuck.
@@ -869,7 +869,9 @@ This is the highest-priority UX bug. It will fail App Store review if left unfix
 
 ---
 
-### 🔧 LOG-02 — Redesign emotion library using Russell's circumplex model
+### ✅ LOG-02 — Redesign emotion library using Russell's circumplex model
+
+**Done (Nov 2026):** shipped as 70 plain words (10 per center), each in one of five energy zones (a plain-language circumplex), with the chakra center kept as the data model. Old check-ins keep counting through `EmotionLibrary.v1Valence`. See `docs/emotion-library-v2.md`. The original ticket text below is kept for history.
 
 **Problem**
 The current emotion library (~98 emotions across 7 chakra centers) was built to map neatly to chakras, but the emotion words don't cover the full spectrum of human feeling and have redundancy. Russell's circumplex model of affect (1980) organizes emotions on two axes — **valence** (pleasant ↔ unpleasant) and **arousal** (activated ↔ deactivated) — which provides a principled, comprehensive, non-redundant framework for labeling any affective state.

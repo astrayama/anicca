@@ -1,6 +1,6 @@
 # Emotion library v2
 
-> **Status:** Draft for review — not wired into the app.
+> **Status:** Approved by Isa on Nov 7, 2026 (draft recommendations accepted for every open question). Wired into the app.
 
 ## 1. Summary
 
@@ -592,4 +592,4 @@ The seven most-logged words keep their v1 centers: Tired and Happy in Sacral, St
 
 ## 9. Sign-off
 
-Approved by ______ on ______
+Approved by Isa on Nov 7, 2026. All open questions resolved as the draft recommends; where a question had no explicit recommendation (8, 9, 12, 14) the draft as written stands: Ashamed, Brave in Throat, both targets pre-filled, Curious positive.
