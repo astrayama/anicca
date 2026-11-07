@@ -57,6 +57,8 @@ Anicca has four main tabs:
 
 ### Subscription tiers
 
+> **Superseded (Nov 7 2026).** What's behind the paywall is now the Free vs Pro table on the paywall itself, defined in `Anicca/Models/PlanTier.swift` (`PlanFeature.all`) and pinned by `AniccaTests/PlanTests.swift`. Differences from this older table: reminders are free, the radar chart (14 days and all time) is free, and the Bundle is off sale for v1. The table below is kept for history.
+
 | Feature | Free | Pro |
 |---|---|---|
 | Check-ins per month | 30 | Unlimited |

@@ -80,16 +80,9 @@ struct PaywallView: View {
     private var featureList: some View {
         VStack(spacing: 0) {
             featureHeader
-            featureRow("Check-ins per month", free: "30", pro: "Unlimited")
-            featureRow("Chakra radar chart", free: "✓", pro: "✓")
-            featureRow("7-day timeline", free: "✓", pro: "✓")
-            featureRow("14-day + Monthly timeline", free: "—", pro: "✓")
-            featureRow("Weekly summary", free: "—", pro: "✓")
-            featureRow("Weekly reflection", free: "—", pro: "✓")
-            featureRow("Check-in streak tracking", free: "—", pro: "✓")
-            featureRow("Reminder scheduling", free: "✓", pro: "✓")
-            featureRow("PDF export", free: "—", pro: "✓")
-            featureRow("Yggdrasil integration", free: "—", pro: "Bundle")
+            ForEach(PlanFeature.all) { feature in
+                featureRow(feature.title, free: feature.free, pro: feature.pro)
+            }
         }
         .aniccaCard(padding: AniccaTheme.Spacing.s12)
     }

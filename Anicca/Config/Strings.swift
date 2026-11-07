@@ -132,6 +132,7 @@ enum Strings {
         static let weeklySummary = "Weekly Summary"
         static let reflectionTitle = "Your weekly reflection"
         static let reflectionUnlock = "Unlock with Pro →"
+        static let longerRangesArePro = "14-day and monthly views are part of Pro."
         static let reflectionCaption = "Based on your check-ins from the last 7 days"
         static let recentCheckIns = "Recent Check-ins"
         static let emptyState = "Start logging to see your balance"

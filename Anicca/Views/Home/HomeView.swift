@@ -30,6 +30,8 @@ struct HomeView: View {
         .navigationTitle("Home")
         .navigationBarTitleDisplayMode(.inline)
         .task { await refresh() }
+        // A fresh upgrade (or a lapse) changes what the suggestion card shows.
+        .onChange(of: entitlements.isPro) { _, _ in loadSuggestions() }
         .sheet(isPresented: $showPaywall) { PaywallView() }
     }
 

@@ -22,19 +22,23 @@ final class PaywallViewModel: ObservableObject {
     @Published var packages: [Package] = []
 
     private let revenueCat = RevenueCatService.shared
-    private let auth = AuthService.shared
 
-    var proMonthlyPackage: Package? {
-        packages.first { $0.storeProduct.productIdentifier == "anicca_pro_monthly" }
+    private func package(_ productID: String) -> Package? {
+        packages.first { $0.storeProduct.productIdentifier == productID }
     }
-    var proAnnualPackage: Package? {
-        packages.first { $0.storeProduct.productIdentifier == "anicca_pro_annual" }
-    }
+
+    // Pro is the current offering's Monthly ($rc_monthly) and Annual ($rc_annual) packages, so the
+    // products behind them (and their prices) can change in the RevenueCat dashboard, and the
+    // Test Store's sample products work in Debug, without an app update.
+    var proMonthlyPackage: Package? { packages.first { $0.packageType == .monthly } }
+    var proAnnualPackage: Package? { packages.first { $0.packageType == .annual } }
+
+    // While the Bundle is off sale these stay nil even if the offering still contains it.
     var bundleMonthlyPackage: Package? {
-        packages.first { $0.storeProduct.productIdentifier == "anicca_bundle_monthly" }
+        AppConfig.bundleOnSale ? package(AppConfig.ProductID.bundleMonthly) : nil
     }
     var bundleAnnualPackage: Package? {
-        packages.first { $0.storeProduct.productIdentifier == "anicca_bundle_annual" }
+        AppConfig.bundleOnSale ? package(AppConfig.ProductID.bundleAnnual) : nil
     }
 
     // Prices come only from loaded StoreKit products — never hardcoded fallbacks,
@@ -103,11 +107,13 @@ final class PaywallViewModel: ObservableObject {
         }
         isWorking = true
         defer { isWorking = false }
+        errorMessage = nil
         do {
-            let tier = try await revenueCat.purchase(package: package)
-            await auth.updatePlanTier(tier)
+            // The new tier reaches every screen through RevenueCatService → EntitlementManager.
+            _ = try await revenueCat.purchase(package: package)
             purchaseCompleted = true
-            NotificationCenter.default.post(name: .planUpgraded, object: nil)
+        } catch AppError.purchaseCancelled {
+            // Backing out of Apple's sheet isn't an error; leave the paywall as it was.
         } catch let error as AppError {
             errorMessage = error.errorDescription
         } catch {
@@ -118,11 +124,10 @@ final class PaywallViewModel: ObservableObject {
     func restore() async {
         isWorking = true
         defer { isWorking = false }
+        errorMessage = nil
         do {
-            let tier = try await revenueCat.restorePurchases()
-            await auth.updatePlanTier(tier)
+            _ = try await revenueCat.restorePurchases()
             purchaseCompleted = true
-            NotificationCenter.default.post(name: .planUpgraded, object: nil)
         } catch let error as AppError {
             errorMessage = error.errorDescription
         } catch {

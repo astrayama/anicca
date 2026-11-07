@@ -32,7 +32,7 @@ struct AniccaApp: App {
     @Environment(\.scenePhase) private var scenePhase
 
     @StateObject private var auth = AuthService.shared
-    @StateObject private var entitlements = EntitlementManager()
+    @StateObject private var entitlements = EntitlementManager.shared
     @StateObject private var revenueCat = RevenueCatService.shared
     @StateObject private var router = AppRouter()
 
@@ -80,14 +80,11 @@ struct AniccaApp: App {
                         let done = UserDefaults.standard.bool(forKey: AppConfig.onboardingCompleteKey)
                         router.route = done ? .main : .onboarding
                     }
+                    // Links purchases to this account; the tier (and its Supabase copy) updates
+                    // through RevenueCatService, which EntitlementManager mirrors.
                     Task {
                         if let id = auth.currentUser?.id {
                             await revenueCat.login(userId: id)
-                            let tier = await revenueCat.checkEntitlement()
-                            entitlements.setTier(tier)
-                            if tier != auth.currentUser?.planTier {
-                                await auth.updatePlanTier(tier)
-                            }
                         }
                     }
                 } else {
@@ -118,8 +115,7 @@ struct AniccaApp: App {
 
     private func bootstrap() async {
         await auth.restoreSession()
-        let tier = await revenueCat.checkEntitlement()
-        entitlements.setTier(tier)
+        await revenueCat.checkEntitlement()
         NotificationService.shared.clearBadge()
         await CheckInService.shared.retryUnsyncedCheckIns()
         router.routeForCurrentState()
@@ -130,8 +126,7 @@ struct AniccaApp: App {
         case .active:
             Task {
                 NotificationService.shared.clearBadge()
-                let tier = await revenueCat.checkEntitlement()
-                entitlements.setTier(tier)
+                await revenueCat.checkEntitlement()
                 await CheckInService.shared.retryUnsyncedCheckIns()
             }
         default:

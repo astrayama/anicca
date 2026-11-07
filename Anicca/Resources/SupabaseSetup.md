@@ -88,11 +88,11 @@ Create two entitlements in the dashboard:
 | Entitlement ID | Notes |
 |---|---|
 | `pro` | Unlocks Pro features |
-| `bundle` | Unlocks Pro + Bundle features (Yggdrasil deep integration) |
+| `bundle` | Unlocks everything in Pro (Yggdrasil integration later). Off sale for v1 |
 
 ### Products (App Store Connect)
 
-Create the four auto-renewing subscriptions in App Store Connect, then attach each to RevenueCat:
+v1 sells Pro only (`AppConfig.bundleOnSale = false`, decided Nov 7 2026). Create the two Pro auto-renewing subscriptions in App Store Connect and attach them to RevenueCat. The bundle rows are for when the Bundle goes on sale:
 
 | Product ID | Price | Entitlement |
 |---|---|---|
@@ -103,4 +103,4 @@ Create the four auto-renewing subscriptions in App Store Connect, then attach ea
 
 ### Offering
 
-Create a RevenueCat offering called `default` and attach all four packages. The Paywall uses these IDs directly — keep them stable.
+Create a RevenueCat offering called `default` with the Pro packages (Monthly → `anicca_pro_monthly`, Annual → `anicca_pro_annual`). The paywall takes the current offering's Monthly and Annual packages, so the products behind them can change in the dashboard without an app update. For simulator testing, create the same two products in RevenueCat's Test Store and put the `test_` key in `REVENUECAT_TEST_API_KEY` (Debug builds only).
