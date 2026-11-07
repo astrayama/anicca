@@ -31,7 +31,7 @@ packages:
     from: 2.0.0
   RevenueCat:
     url: https://github.com/RevenueCat/purchases-ios
-    from: 5.0.0
+    from: 5.43.0 # the first release that supports RevenueCat's Test Store (test_ keys)
   GoogleSignIn:
     url: https://github.com/google/GoogleSignIn-iOS
     from: 7.0.0
@@ -93,11 +93,14 @@ targets:
       - path: Anicca/Models/EmotionSelection.swift
       - path: Anicca/Models/EnergyCenter.swift
       - path: Anicca/Models/CheckIn.swift
+      - path: Anicca/Models/PlanTier.swift
       - path: Anicca/Services/EmotionMatcher.swift
       - path: Anicca/Services/InsightsService.swift
       - path: Anicca/Theme/AniccaTheme.swift
       - path: Anicca/Extensions/Color+Hex.swift
       - path: Anicca/Config/Strings.swift
+      - path: Anicca/Config/AppConfig.swift
+      - path: Anicca/Config/RevenueCatKey.swift
     settings:
       base:
         GENERATE_INFOPLIST_FILE: YES

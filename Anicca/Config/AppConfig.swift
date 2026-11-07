@@ -22,13 +22,19 @@ enum AppConfig {
         return raw
     }()
 
-    static let revenueCatAPIKey: String = {
-        guard let raw = Bundle.main.object(forInfoDictionaryKey: "REVENUECAT_API_KEY") as? String,
-              !raw.isEmpty
-        else {
-            return ""
-        }
-        return raw
+    /// The RevenueCat key for this build, or nil to run without RevenueCat (see `RevenueCatKey`).
+    static let revenueCatAPIKey: String? = {
+        let info = Bundle.main.infoDictionary
+#if DEBUG
+        let isDebugBuild = true
+#else
+        let isDebugBuild = false
+#endif
+        return RevenueCatKey.select(
+            testKey: info?["REVENUECAT_TEST_API_KEY"] as? String ?? "",
+            appleKey: info?["REVENUECAT_API_KEY"] as? String ?? "",
+            isDebugBuild: isDebugBuild
+        )
     }()
 
     static let googleClientID: String = {
@@ -43,6 +49,17 @@ enum AppConfig {
     // MARK: - Constants
     static let freeMonthlyCheckInLimit = 30
     static let freeMonthlyWarningThreshold = 25
+
+    // MARK: - Subscriptions
+    /// Bundle product identifiers (custom packages in the offering). Pro needs none: the paywall
+    /// takes the current offering's Monthly and Annual packages, whichever products they hold.
+    enum ProductID {
+        static let bundleMonthly = "anicca_bundle_monthly"
+        static let bundleAnnual = "anicca_bundle_annual"
+    }
+    /// The Pro + Yggdrasil Bundle is hidden for v1 (Isa, Nov 7 2026): the Yggdrasil integration
+    /// it advertises isn't built. A `bundle` entitlement still unlocks everything in Pro.
+    static let bundleOnSale = false
     static let onboardingCompleteKey = "anicca_onboarding_complete"
     static let lastReviewVersionKey = "anicca_last_review_version"
     static let reminderNotificationID = "anicca.daily.reminder"

@@ -105,28 +105,35 @@ Claude already fixed in the `claude/project-status-app-store-a7257b` branch: bun
 - [ ] **4.1 Create the subscription group** ⏱ 5 min
   **Do:** App Store Connect → Anicca → Monetization → Subscriptions → create group **Anicca Pro**.
 
-- [ ] **4.2 Create the 4 products** ⏱ 30 min — use these exact IDs (the app matches on them):
+- [ ] **4.2 Create the 2 Pro products** ⏱ 20 min — use these IDs (the app itself only looks at the offering's Monthly and Annual packages, set up in 4.4):
 
   | Product ID | Duration | Price |
   |---|---|---|
   | `anicca_pro_monthly` | 1 month | $4.99 |
   | `anicca_pro_annual` | 1 year | $39.99 |
-  | `anicca_bundle_monthly` | 1 month | $8.99 |
-  | `anicca_bundle_annual` | 1 year | $69.99 |
 
   Each needs a display name, a one-line description, and a price. Screenshot for review can be added later (a paywall screenshot works).
-  **Done when:** all four show "Ready to Submit" (metadata complete).
+  **Bundle is off sale for v1** (decided Nov 7 2026: the Yggdrasil integration it advertises isn't built). Don't create or submit `anicca_bundle_monthly` / `anicca_bundle_annual` yet: a reviewer can't buy them in the app, which gets the submission rejected. Turning it back on later is `AppConfig.bundleOnSale = true` plus these two products.
+  **Done when:** both show "Ready to Submit" (metadata complete).
 
 - [ ] **4.3 Connect RevenueCat to the app** ⏱ 15 min
   **Do:** [app.revenuecat.com](https://app.revenuecat.com) → your project → Apps → add an App Store app with bundle ID `com.screenseiji.anicca`, and connect it with an App Store Connect **In-App Purchase key** (RevenueCat's setup page walks you through generating it).
   **Done when:** the app shows as connected.
 
 - [ ] **4.4 Products, entitlements, offering** ⏱ 20 min
-  **Do:** Import the 4 products into RevenueCat. Create entitlements **`pro`** (attach both pro products) and **`bundle`** (attach both bundle products). Create offering **`default`** containing all four packages.
-  **Done when:** offering `default` lists 4 packages.
+  **Do:** Import the 2 Pro products into RevenueCat. Create entitlement **`pro`** and attach both. Create offering **`default`** (mark it Current) with two packages: **Monthly** (`$rc_monthly`) → `anicca_pro_monthly` and **Annual** (`$rc_annual`) → `anicca_pro_annual`.
+  **Done when:** offering `default` lists 2 packages.
+  *What's behind the paywall is the Free vs Pro table on the paywall itself; it's defined in `Anicca/Models/PlanTier.swift` (`PlanFeature.all`).*
 
-- [ ] **4.5 Swap in the production API key** ⏱ 2 min
-  **Do:** RevenueCat → API keys → copy the **public app-specific key** (`appl_…`) → `Secrets.xcconfig` → `REVENUECAT_API_KEY`. (The old `test_` key won't work in production.)
+- [ ] **4.5 Two API keys: one ships, one tests** ⏱ 2 min
+  **Do:** RevenueCat → API keys. In `Secrets.xcconfig`:
+  - `REVENUECAT_API_KEY` = the **public Apple key** (`appl_…`). This is the one that ships.
+  - `REVENUECAT_TEST_API_KEY` = the **Test Store key** (`test_…`), the one you have today. Debug builds use it, so you can buy fake subscriptions in the simulator.
+  Release builds never use a `test_` key: the RevenueCat SDK crashes a Release build configured with one, so the app refuses it and the paywall shows "Plans can't be loaded" instead.
+
+- [ ] **4.5b Test Store (for simulator testing)** ⏱ 10 min · can be done before 1.4 finishes
+  **Do:** RevenueCat → your project → **Test Store**. Your `default` offering already has RevenueCat's sample products in its Monthly (`monthly`) and Annual (`yearly`) packages; the paywall uses those two. Set their prices to $4.99 and $39.99 so the paywall looks right. RevenueCat attached them to an auto-created entitlement called **"Screen Sage Studios Pro"**, but the app only unlocks on an entitlement whose identifier is exactly **`pro`**: create `pro` (Product catalog → Entitlements → New) and attach the Test Store `monthly` and `yearly` products to it. The App Store products join the same entitlement in 4.4. The Lifetime sample package is ignored.
+  **Done when:** a Debug run from Xcode shows both prices on the paywall, and buying one in the Test Store dialog unlocks Pro straight away.
 
 - [ ] **4.6 Sandbox purchase test** ⏱ 15 min
   **Do:** App Store Connect → Users and Access → **Sandbox Testers** → create one. Run the app from Xcode, open the paywall, buy Pro with the sandbox account.
@@ -151,7 +158,7 @@ Claude already fixed in the `claude/project-status-app-store-a7257b` branch: bun
 
 ## Phase 6 — First TestFlight 🧑 ⏱ ~60 min + processing
 
-- [ ] **6.1 Final secrets check** ⏱ 3 min — `Secrets.xcconfig` has: the `appl_…` RevenueCat key (4.5), both Google values (3.5).
+- [ ] **6.1 Final secrets check** ⏱ 3 min — `Secrets.xcconfig` has: the `appl_…` RevenueCat key in `REVENUECAT_API_KEY` (4.5; a `test_` key there means no purchases in the archive), both Google values (3.5).
 
 - [ ] **6.2 Regenerate + open** ⏱ 2 min — `./setup.sh`, open Xcode.
 
@@ -171,7 +178,8 @@ Claude already fixed in the `claude/project-status-app-store-a7257b` branch: bun
   - [ ] After saving, the words appear under "Recent" on the Log tab
   - [ ] Insights: radar renders; weekly summary is blurred on a free account
   - [ ] Paywall shows real App Store prices + the renewal disclosure text
-  - [ ] Sandbox-purchase Pro → badge flips, weekly insight unblurs
+  - [ ] Free account: Today's Suggestion is locked; Insights → 14 Days / Month opens the paywall
+  - [ ] Sandbox-purchase Pro → without leaving the app, the badge flips, the weekly summary and reflection unblur, 14 Days / Month open
   - [ ] Enable a reminder on a **free** account → notification arrives at the set time
   - [ ] **Force-quit the app, relaunch**, then Delete Account using a throwaway Apple-sign-in account → re-auth sheet appears → user is gone from Supabase Auth → Users. *(The force-quit relaunch is exactly the path that used to be broken.)*
 
@@ -194,7 +202,7 @@ Claude already fixed in the `claude/project-status-app-store-a7257b` branch: bun
   **Do:** Create a demo email account, seed 8–10 check-ins, then in RevenueCat (Customers → find the user → grant entitlement `pro`) so reviewers can see gated features. Enter the credentials in App Review Information, with notes: where the paywall is, that free-text is matched to emotions on device (no AI), and that Delete Account requires re-authentication.
 
 - [ ] **7.6 Submit** ⏱ 10 min
-  **Do:** Version page → select the TestFlight build → confirm the 4 subscriptions are attached to this first submission → pricing **Free** (with in-app purchases) → availability → **Submit for Review**.
+  **Do:** Version page → select the TestFlight build → confirm the 2 Pro subscriptions are attached to this first submission → pricing **Free** (with in-app purchases) → availability → **Submit for Review**.
   **Done when:** status says *Waiting for Review*. 🎉 Reviews for new apps typically take 1–3 days.
 
 ---

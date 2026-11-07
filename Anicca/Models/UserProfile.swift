@@ -1,24 +1,6 @@
 import Foundation
 import SwiftData
 
-enum PlanTier: String, Codable, CaseIterable {
-    case free = "free"
-    case pro = "pro"
-    case bundle = "bundle"
-
-    var displayName: String {
-        switch self {
-        case .free: return "Free"
-        case .pro: return "Pro ✦"
-        case .bundle: return "Bundle ✦✦"
-        }
-    }
-
-    var isPaid: Bool {
-        self == .pro || self == .bundle
-    }
-}
-
 @Model
 final class UserProfile {
     @Attribute(.unique) var id: String

@@ -57,13 +57,33 @@ struct InsightsView: View {
         }
     }
 
+    /// Free keeps the week view; picking 14 Days or Month opens the paywall and stays on Week.
     private var timeFilter: some View {
-        Picker("Range", selection: $viewModel.timeRange) {
-            ForEach(InsightsTimeRange.allCases) { range in
-                Text(range.rawValue).tag(range)
+        VStack(alignment: .leading, spacing: AniccaTheme.Spacing.s4) {
+            Picker("Range", selection: Binding(
+                get: { viewModel.timeRange },
+                set: { range in
+                    if entitlements.planTier.allowsTimeline(days: range.days) {
+                        viewModel.timeRange = range
+                    } else {
+                        showPaywall = true
+                    }
+                }
+            )) {
+                ForEach(InsightsTimeRange.allCases) { range in
+                    Text(range.rawValue).tag(range)
+                }
+            }
+            .pickerStyle(.segmented)
+            if !entitlements.isPro {
+                Text(Strings.Insights.longerRangesArePro).anicca(.caption)
             }
         }
-        .pickerStyle(.segmented)
+        .onChange(of: entitlements.isPro) { _, isPro in
+            if !isPro && !entitlements.planTier.allowsTimeline(days: viewModel.timeRange.days) {
+                viewModel.timeRange = .week
+            }
+        }
     }
 
     private var radarCard: some View {

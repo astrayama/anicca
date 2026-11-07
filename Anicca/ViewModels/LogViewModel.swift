@@ -1,6 +1,7 @@
 import Foundation
 import SwiftUI
 import SwiftData
+import Combine
 
 // MARK: - Navigation
 
@@ -47,6 +48,14 @@ final class LogViewModel: ObservableObject {
     private let checkInService = CheckInService.shared
     private let insightsService = InsightsService()
     private let auth = AuthService.shared
+    private let entitlements = EntitlementManager.shared
+    private var entitlementChange: AnyCancellable?
+
+    init() {
+        // Re-render when the plan changes, so the limit warning clears the moment someone upgrades.
+        entitlementChange = entitlements.objectWillChange
+            .sink { [weak self] _ in self?.objectWillChange.send() }
+    }
 
     // MARK: - Computed
 
@@ -72,12 +81,9 @@ final class LogViewModel: ObservableObject {
     }
 
     var freeLimitWarning: String? {
-        guard auth.currentUser?.planTier == .free else { return nil }
-        if monthCount >= AppConfig.freeMonthlyWarningThreshold && monthCount < AppConfig.freeMonthlyCheckInLimit {
-            let remaining = AppConfig.freeMonthlyCheckInLimit - monthCount
-            return String(format: Strings.Log.freeLimitWarning, remaining)
-        }
-        return nil
+        guard let remaining = entitlements.planTier.checkInsLeftWarning(checkInsThisMonth: monthCount)
+        else { return nil }
+        return String(format: Strings.Log.freeLimitWarning, remaining)
     }
 
     var nextCheckInNumber: Int {
@@ -193,7 +199,7 @@ final class LogViewModel: ObservableObject {
             return
         }
         refreshMonthCount()
-        if user.planTier == .free && monthCount >= AppConfig.freeMonthlyCheckInLimit {
+        if entitlements.planTier.hasReachedMonthlyLimit(checkInsThisMonth: monthCount) {
             showPaywall = true
             return
         }

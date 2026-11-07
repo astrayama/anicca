@@ -1,46 +1,33 @@
 import Foundation
 import SwiftUI
+import Combine
 
+/// What the views gate on. Mirrors `RevenueCatService.planTier`, so a purchase, restore, renewal
+/// or expiry reaches every screen as soon as RevenueCat reports it. What each tier includes is
+/// listed in `PlanFeature.all` (the paywall table).
 @MainActor
 final class EntitlementManager: ObservableObject {
-    @Published private var _planTier: PlanTier = .free
- 
-    var planTier: PlanTier {
-        get {
-#if DEBUG
-            if UserDefaults.standard.bool(forKey: "developer_override_pro") {
-                return .pro
-            }
-#endif
-            return _planTier
-        }
-        set {
-            _planTier = newValue
-            objectWillChange.send()
-        }
-    }
- 
-    var isPro: Bool { planTier == .pro || planTier == .bundle }
-    var isBundle: Bool { planTier == .bundle }
- 
-    func setTier(_ tier: PlanTier) {
-        self._planTier = tier
-        objectWillChange.send()
-    }
- 
-    @ViewBuilder
-    func requiresPro<Content: View, Placeholder: View>(
-        @ViewBuilder content: () -> Content,
-        @ViewBuilder placeholder: () -> Placeholder
-    ) -> some View {
-        if isPro {
-            content()
-        } else {
-            placeholder()
-        }
-    }
-}
+    static let shared = EntitlementManager()
 
-extension Notification.Name {
-    static let planUpgraded = Notification.Name("anicca.planUpgraded")
+    @Published private var _planTier: PlanTier = .free
+    private var cancellable: AnyCancellable?
+
+    private init(revenueCat: RevenueCatService = .shared) {
+        _planTier = revenueCat.planTier
+        cancellable = revenueCat.$planTier
+            .removeDuplicates()
+            .sink { [weak self] tier in self?._planTier = tier }
+    }
+
+    var planTier: PlanTier {
+#if DEBUG
+        if UserDefaults.standard.bool(forKey: "developer_override_pro") {
+            return .pro
+        }
+#endif
+        return _planTier
+    }
+
+    var isPro: Bool { planTier.isPaid }
+    var isBundle: Bool { planTier == .bundle }
 }
