@@ -2,35 +2,42 @@ import Foundation
 import SwiftUI
 import SwiftData
 
-// MARK: - Log Entry Mode
+// MARK: - Navigation
 
-enum LogEntryMode: Equatable {
-    case freeText
-    case mappingResult
-    case browse(prefillSearch: String)
+/// Screens pushed on top of the check-in start screen.
+enum LogRoute: Hashable {
+    case zone(EmotionZone)
+    case review
 }
 
+/// What happened the last time the user tapped "Map my feelings".
+enum MapFeedback: Equatable {
+    case added([String])
+    case alreadySelected
+    case noMatch
+}
+
+/// Drives the whole check-in: start screen (type, recents, zones) → zone words → review → save.
+///
+/// Navigating never changes the check-in in progress. Only Clear and a successful Save do.
 @MainActor
 final class LogViewModel: ObservableObject {
 
-    // MARK: - Browse / Tile state (Mode 2 + legacy)
-    @Published var searchText: String = ""
-    @Published var expandedCenters: Set<EnergyCenter> = Set(EnergyCenter.allCases)
-    @Published var selectedEmotions: [Emotion: Int] = [:]
-    @Published var touchedIntensity: Set<Emotion> = []
+    // MARK: - Check-in in progress
+
+    @Published var path: [LogRoute] = []
+    @Published var query: String = "" {
+        didSet { if query != oldValue { mapFeedback = nil } }
+    }
+    @Published private(set) var selection = EmotionSelection()
     @Published var note: String = ""
+    @Published private(set) var recents: [Emotion] = []
+    @Published var mapFeedback: MapFeedback?
 
-    // MARK: - Mode 1 — Free Text Mapping (on-device EmotionMatcher)
-    @Published var freeText: String = ""
-    @Published var mappedEmotions: [MappedEmotion] = []
+    // MARK: - Save, paywall and toast
 
-    // MARK: - Navigation
-    @Published var entryMode: LogEntryMode = .freeText
-
-    // MARK: - Sheet / toast state
     @Published var isSaving: Bool = false
     @Published var errorMessage: String?
-    @Published var showIntensitySheet: Bool = false
     @Published var showPaywall: Bool = false
     @Published var showSavedToast: Bool = false
     @Published var savedStreak: Int = 0
@@ -43,11 +50,25 @@ final class LogViewModel: ObservableObject {
 
     // MARK: - Computed
 
-    var totalSelected: Int { selectedEmotions.count }
+    var queryMode: LogQueryMode { LogQueryMode.mode(for: query) }
 
-    var canSave: Bool {
-        !selectedEmotions.isEmpty &&
-        selectedEmotions.allSatisfy { touchedIntensity.contains($0.key) }
+    /// Library words for what's typed: live search for a word or two, the on-device matcher's
+    /// reading for a sentence.
+    var suggestions: [Emotion] {
+        switch queryMode {
+        case .idle: return []
+        case .words: return Array(EmotionMatcher.search(query).prefix(12))
+        case .sentence: return EmotionMatcher.match(query).map(\.emotion)
+        }
+    }
+
+    var canSave: Bool { !selection.isEmpty && !isSaving }
+
+    /// True when there's something Clear would throw away.
+    var hasDraft: Bool {
+        !selection.isEmpty
+            || !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            || !note.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
     var freeLimitWarning: String? {
@@ -63,113 +84,105 @@ final class LogViewModel: ObservableObject {
         (auth.currentUser?.totalCheckIns ?? 0) + 1
     }
 
-    // MARK: - Emotion filtering (Mode 2 / browse)
+    // MARK: - Picking words
 
-    func filteredEmotions(for center: EnergyCenter) -> [Emotion] {
-        let all = EmotionLibrary.byCenter[center] ?? []
-        guard !searchText.isEmpty else { return all }
-        let lower = searchText.lowercased()
-        return all.filter { emotion in
-            if emotion.name.lowercased().contains(lower) { return true }
-            return emotion.synonyms.contains { $0.lowercased().contains(lower) }
-        }
+    func isSelected(_ emotion: Emotion) -> Bool {
+        selection.contains(emotion)
     }
-
-    func centerHasResults(_ center: EnergyCenter) -> Bool {
-        !filteredEmotions(for: center).isEmpty
-    }
-
-    // MARK: - Emotion selection
 
     func toggle(_ emotion: Emotion) {
-        if selectedEmotions[emotion] != nil {
-            selectedEmotions.removeValue(forKey: emotion)
-            touchedIntensity.remove(emotion)
-        } else {
-            selectedEmotions[emotion] = 3
+        selection.toggle(emotion)
+    }
+
+    /// Tapping a word suggested from typed text keeps the strength the wording implied
+    /// ("really anxious" → 4).
+    func toggleSuggestion(_ emotion: Emotion) {
+        if selection.contains(emotion) {
+            selection.remove(emotion)
+            return
         }
+        let guess = EmotionMatcher.match(query).first { $0.emotion == emotion }?.intensity
+        selection.add(emotion, intensity: guess ?? EmotionSelection.defaultIntensity)
     }
 
-    func updateIntensity(_ value: Int, for emotion: Emotion) {
-        selectedEmotions[emotion] = value
-        touchedIntensity.insert(emotion)
+    func remove(_ emotion: Emotion) {
+        selection.remove(emotion)
     }
 
-    func setExpanded(_ expanded: Bool) {
-        if expanded {
-            expandedCenters = Set(EnergyCenter.allCases)
-        } else {
-            expandedCenters.removeAll()
+    func intensity(of emotion: Emotion) -> Int {
+        selection.intensity(of: emotion) ?? EmotionSelection.defaultIntensity
+    }
+
+    func setIntensity(_ value: Int, for emotion: Emotion) {
+        selection.setIntensity(value, for: emotion)
+    }
+
+    /// Reads the typed sentence on device and adds every feeling it finds, with the strength its
+    /// wording implies. Never changes a strength the user already set.
+    func mapQuery() {
+        let mapped = EmotionMatcher.match(query)
+        guard !mapped.isEmpty else {
+            mapFeedback = .noMatch
+            return
         }
+        let added = mapped.filter { selection.add($0.emotion, intensity: $0.intensity) }.map(\.emotion.name)
+        mapFeedback = added.isEmpty ? .alreadySelected : .added(added)
     }
 
-    func toggleSection(_ center: EnergyCenter) {
-        if expandedCenters.contains(center) {
-            expandedCenters.remove(center)
-        } else {
-            expandedCenters.insert(center)
-        }
+    // MARK: - Navigation
+
+    func openZone(_ zone: EmotionZone) {
+        path.append(.zone(zone))
     }
 
-    func presentIntensity() {
-        guard !selectedEmotions.isEmpty else { return }
-        showIntensitySheet = true
+    func openReview() {
+        guard !selection.isEmpty, path.last != .review else { return }
+        path.append(.review)
     }
 
-    // MARK: - Mode 1: Free-text Mapping
-
-    /// Maps the typed text to emotions on device. No match → Browse, prefilled with
-    /// the text when it's short enough to work as a search.
-    func mapFreeText() {
-        let text = freeText.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !text.isEmpty else { return }
-
-        let mapped = EmotionMatcher.match(text)
-        if mapped.isEmpty {
-            let wordCount = text.split { $0.isWhitespace || $0.isNewline }.count
-            let prefill = wordCount <= 2 ? text : ""
-            entryMode = .browse(prefillSearch: prefill)
-        } else {
-            mappedEmotions = mapped
-            entryMode = .mappingResult
-        }
-    }
-
-    // MARK: - Commit mapped emotions -> selectedEmotions (for IntensitySheet)
-
-    func commitMappedEmotions() {
-        for mapped in mappedEmotions {
-            selectedEmotions[mapped.emotion] = mapped.intensity
-            touchedIntensity.insert(mapped.emotion)
-        }
-    }
-
-    func updateMappedIntensity(_ value: Int, for mapped: MappedEmotion) {
-        if let idx = mappedEmotions.firstIndex(where: { $0.id == mapped.id }) {
-            mappedEmotions[idx].intensity = value
-        }
-    }
-
-    func removeMappedEmotion(_ mapped: MappedEmotion) {
-        mappedEmotions.removeAll { $0.id == mapped.id }
-    }
-
-    // MARK: - Reset & Navigation
-
-    func reset() {
-        selectedEmotions.removeAll()
-        touchedIntensity.removeAll()
-        mappedEmotions.removeAll()
-        freeText = ""
-        searchText = ""
+    /// Throws away the check-in in progress but stays where the user is.
+    func clearAll() {
+        selection.removeAll()
+        query = ""
         note = ""
-        showIntensitySheet = false
-        entryMode = .freeText
+        mapFeedback = nil
     }
+
+    /// Clears everything and goes back to the start screen.
+    func reset() {
+        clearAll()
+        path = []
+    }
+
+    // MARK: - Data
 
     func refreshMonthCount() {
         guard let userId = auth.currentUser?.id else { return }
         monthCount = checkInService.currentMonthCount(userId: userId)
+    }
+
+    /// The user's most recent words, newest check-in first, mapped back to library words by name
+    /// and center. Words no longer in the library are skipped. Nothing new is stored.
+    func refreshRecents(limit: Int = 8) {
+        guard let userId = auth.currentUser?.id else {
+            recents = []
+            return
+        }
+        var seen = Set<String>()
+        var result: [Emotion] = []
+        outer: for checkIn in checkInService.fetchLocalCheckIns(userId: userId).prefix(30) {
+            // SwiftData doesn't keep relationship order; strongest first reads best.
+            let entries = checkIn.entries.sorted {
+                $0.intensity != $1.intensity ? $0.intensity > $1.intensity : $0.emotionName < $1.emotionName
+            }
+            for entry in entries {
+                guard let emotion = EmotionLibrary.emotion(named: entry.emotionName, in: entry.energyCenter),
+                      seen.insert(emotion.id).inserted else { continue }
+                result.append(emotion)
+                if result.count == limit { break outer }
+            }
+        }
+        recents = result
     }
 
     // MARK: - Save
@@ -181,7 +194,6 @@ final class LogViewModel: ObservableObject {
         }
         refreshMonthCount()
         if user.planTier == .free && monthCount >= AppConfig.freeMonthlyCheckInLimit {
-            showIntensitySheet = false
             showPaywall = true
             return
         }
@@ -189,15 +201,13 @@ final class LogViewModel: ObservableObject {
         isSaving = true
         defer { isSaving = false }
 
-        let entries = selectedEmotions.map { (emotion: $0.key, intensity: $0.value) }
         do {
             let saved = try await checkInService.saveCheckIn(
                 userId: user.id,
                 note: note,
-                entries: entries
+                entries: selection.entries
             )
-            let dominant = insightsService.dominantCenter(in: saved.entries)
-            savedDominantCenter = dominant
+            savedDominantCenter = insightsService.dominantCenter(in: saved.entries)
 
             let allCheckIns = checkInService.fetchLocalCheckIns(userId: user.id)
             let streak = insightsService.streak(from: allCheckIns)
@@ -208,20 +218,21 @@ final class LogViewModel: ObservableObject {
             )
             savedStreak = streak
             refreshMonthCount()
-            showIntensitySheet = false
-            withAnimation(AniccaTheme.springAnimation) {
-                showSavedToast = true
-            }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) { [weak self] in
-                withAnimation(AniccaTheme.springAnimation) {
-                    self?.showSavedToast = false
-                }
-            }
             reset()
+            refreshRecents()
+            showToast()
         } catch let error as AppError {
             errorMessage = error.errorDescription
         } catch {
             errorMessage = Strings.Errors.generic
+        }
+    }
+
+    private func showToast() {
+        withAnimation(AniccaTheme.springAnimation) { showSavedToast = true }
+        Task { [weak self] in
+            try? await Task.sleep(for: .seconds(2.5))
+            withAnimation(AniccaTheme.springAnimation) { self?.showSavedToast = false }
         }
     }
 }

@@ -25,6 +25,30 @@ enum AniccaTheme {
     static let chakraThirdEye = Color(hex: "#3F51B5")
     static let chakraCrown = Color(hex: "#8E44AD")
 
+    // Darker "ink" versions for icons and labels on light backgrounds. Several chakra colours
+    // (Solar yellow, Sacral orange, Heart green) are under 3:1 on white; these are all 4.3:1 or more.
+    static let chakraRootInk = Color(hex: "#A93226")
+    static let chakraSacralInk = Color(hex: "#A04000")
+    static let chakraSolarInk = Color(hex: "#806600")
+    static let chakraHeartInk = Color(hex: "#1E7A45")
+    static let chakraThroatInk = Color(hex: "#1F618D")
+    static let chakraThirdEyeInk = Color(hex: "#3F51B5")
+    static let chakraCrownInk = Color(hex: "#7D3C98")
+
+    // MARK: - Energy zones (Log tab)
+    // Each accent is at least 5.3:1 against every zone tint, so it can carry text as well as icons.
+    // Zone tiles use textPrimary or the accent for text, never textSecondary (about 4:1 on these tints).
+    static let zoneChargedTint = Color(hex: "#FFE5D9")
+    static let zoneChargedAccent = Color(hex: "#9E3B24")
+    static let zoneBrightTint = Color(hex: "#FFF3C4")
+    static let zoneBrightAccent = Color(hex: "#8A5A00")
+    static let zoneSteadyTint = Color(hex: "#EDE8F5")
+    static let zoneSteadyAccent = Color(hex: "#6A4BAE")
+    static let zoneHeavyTint = Color(hex: "#DFE4EE")
+    static let zoneHeavyAccent = Color(hex: "#4A5878")
+    static let zoneCalmTint = Color(hex: "#D4F1E0")
+    static let zoneCalmAccent = Color(hex: "#2A6A4B")
+
     // MARK: - Semantic
     static let success = Color(hex: "#34C759")
     static let warning = Color(hex: "#FF9F0A")

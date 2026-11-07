@@ -6,7 +6,6 @@ struct MappedEmotion: Identifiable {
     let id = UUID()
     let emotion: Emotion
     var intensity: Int          // 1–5, pre-filled from the user's wording (default 3)
-    var isTouched: Bool = true  // Pre-filled means already "touched" → Save unlocks immediately
 }
 
 // MARK: - Emotion Matcher
@@ -26,13 +25,13 @@ enum EmotionMatcher {
 
     /// Maps free text to at most `limit` emotions, returned in the order they appear in the text.
     static func match(_ text: String, limit: Int = 5) -> [MappedEmotion] {
-        var hits: [UUID: Hit] = [:]
+        var hits: [String: Hit] = [:]
         var position = 0
         for clause in clauses(in: text) {
             scan(clause, offset: position, into: &hits)
             position += clause.tokens.count
         }
-        return dropDuplicateNames(Array(hits.values))
+        return Array(hits.values)
             .sorted { a, b in
                 if a.score != b.score { return a.score > b.score }
                 if a.firstPosition != b.firstPosition { return a.firstPosition < b.firstPosition }
@@ -44,7 +43,7 @@ enum EmotionMatcher {
                     ? a.firstPosition < b.firstPosition
                     : libraryIndex(a.emotion) < libraryIndex(b.emotion)
             }
-            .map { MappedEmotion(emotion: $0.emotion, intensity: $0.intensity, isTouched: true) }
+            .map { MappedEmotion(emotion: $0.emotion, intensity: $0.intensity) }
     }
 
     /// Ranks library emotions against a search query (Browse screen). Empty query → no results.
@@ -94,238 +93,169 @@ enum EmotionMatcher {
         "panic": ["Anxious"],
         "panicking": ["Anxious"],
         "panicked": ["Anxious"],
-        "panicky": ["Anxious"],
         "on edge": ["Anxious", "Restless"],
-        "freaking out": ["Anxious"],
-        "freaked out": ["Anxious"],
+        "freaking out": ["Anxious", "Scared"],
+        "freaked out": ["Anxious", "Scared"],
         "dread": ["Anxious"],
         "dreading": ["Anxious"],
-        "fear": ["Anxious"],
-        "terrified": ["Anxious"],
-        "scary": ["Anxious"],
-        "overthinking": ["Anxious", "Scattered"],
+        "fear": ["Scared"],
+        "scary": ["Scared"],
+        "overthinking": ["Anxious", "Distracted"],
         "spiraling": ["Anxious", "Overwhelmed"],
         "spiralling": ["Anxious", "Overwhelmed"],
-        "threatened": ["Insecure"],
-        "not safe": ["Insecure"],
-        "don't feel safe": ["Insecure"],
-        "jittery": ["Restless"],
+        "threatened": ["Scared", "Insecure"],
+        "not safe": ["Scared"],
+        "don't feel safe": ["Scared"],
         "can't relax": ["Restless"],
         "can't sit still": ["Restless"],
         "can't sleep": ["Restless", "Anxious"],
         "impatient": ["Restless", "Frustrated"],
 
         // Overwhelm & exhaustion
-        "stressed": ["Overwhelmed"],
-        "stressed out": ["Overwhelmed", "Anxious"],
-        "stress": ["Overwhelmed"],
-        "stressful": ["Overwhelmed"],
-        "burnt out": ["Overwhelmed"],
-        "burned out": ["Overwhelmed"],
+        "stress": ["Stressed"],
+        "stressful": ["Stressed"],
         "burnout": ["Overwhelmed"],
         "too much": ["Overwhelmed"],
-        "exhausted": ["Overwhelmed"],
-        "drained": ["Overwhelmed"],
-        "worn out": ["Overwhelmed"],
-        "stretched thin": ["Overwhelmed"],
-        "under pressure": ["Overwhelmed"],
-        "overstimulated": ["Overwhelmed", "Scattered"],
-        "not okay": ["Overwhelmed"],
-        "not ok": ["Overwhelmed"],
-        "not alright": ["Overwhelmed"],
-        "can't cope": ["Overwhelmed", "Powerless"],
-        "can't handle": ["Overwhelmed", "Powerless"],
-        "out of control": ["Powerless", "Overwhelmed"],
+        "exhausted": ["Tired", "Overwhelmed"],
+        "drained": ["Tired", "Overwhelmed"],
+        "worn out": ["Tired", "Overwhelmed"],
+        "overstimulated": ["Overwhelmed", "Distracted"],
+        "not okay": ["Sad", "Overwhelmed"],
+        "not ok": ["Sad", "Overwhelmed"],
+        "not alright": ["Sad", "Overwhelmed"],
+        "can't cope": ["Overwhelmed", "Helpless"],
+        "can't handle": ["Overwhelmed", "Helpless"],
+        "out of control": ["Helpless", "Overwhelmed"],
 
         // Low energy & flat
-        "tired": ["Uninspired"],
-        "meh": ["Uninspired"],
-        "blah": ["Uninspired"],
-        "lazy": ["Uninspired"],
-        "sluggish": ["Uninspired", "Foggy"],
-        "unproductive": ["Uninspired"],
-        "no energy": ["Uninspired", "Overwhelmed"],
-        "no motivation": ["Uninspired"],
-        "feeling down": ["Hollow", "Uninspired"],
-        "feel down": ["Hollow", "Uninspired"],
-        "feeling low": ["Hollow", "Uninspired"],
-        "feeling blue": ["Lonely"],
-        "depressed": ["Hollow", "Uninspired"],
+        "sluggish": ["Tired", "Foggy"],
+        "unproductive": ["Bored"],
+        "no energy": ["Tired"],
+        "no motivation": ["Bored"],
+        "feeling down": ["Sad"],
+        "feel down": ["Sad"],
+        "feeling low": ["Sad"],
+        "feeling blue": ["Sad"],
+        "depressed": ["Sad", "Empty"],
         "can't feel anything": ["Numb"],
         "feel nothing": ["Numb"],
-        "don't care": ["Numb", "Uninspired"],
-        "dead inside": ["Numb", "Hollow"],
-        "empty inside": ["Hollow"],
+        "don't care": ["Numb", "Bored"],
+        "dead inside": ["Numb", "Empty"],
+        "empty inside": ["Empty"],
         "not myself": ["Disconnected"],
-        "nothing matters": ["Meaningless"],
-        "what's the point": ["Meaningless"],
-        "no purpose": ["Meaningless"],
-        "hopeless": ["Powerless", "Meaningless"],
+        "nothing matters": ["Empty"],
+        "what's the point": ["Hopeless", "Empty"],
+        "no purpose": ["Empty"],
 
         // Sadness & hurt
-        "sadness": ["Lonely", "Grieving"],
-        "crying": ["Grieving", "Hurt"],
-        "cried": ["Grieving", "Hurt"],
-        "tears": ["Grieving", "Hurt"],
-        "can't stop crying": ["Grieving", "Hurt"],
+        "sadness": ["Sad"],
+        "crying": ["Sad"],
+        "cried": ["Sad"],
+        "tears": ["Sad"],
+        "can't stop crying": ["Sad"],
         "heartbreak": ["Grieving"],
         "loss": ["Grieving"],
         "hurting": ["Hurt"],
         "hurts": ["Hurt"],
         "broken": ["Hurt"],
         "pain": ["Hurt"],
-        "bitter": ["Cynical", "Hurt"],
-        "resentful": ["Hurt", "Frustrated"],
-        "resentment": ["Hurt", "Frustrated"],
-        "rejected": ["Lonely", "Hurt"],
+        "rejected": ["Hurt", "Lonely"],
         "unloved": ["Lonely", "Hurt"],
         "unwanted": ["Lonely", "Hurt"],
-        "left out": ["Lonely", "Hurt"],
         "excluded": ["Lonely", "Hurt"],
         "no one cares": ["Lonely"],
         "nobody cares": ["Lonely"],
-        "homesick": ["Yearning", "Lonely"],
-        "nostalgic": ["Yearning"],
-        "miss": ["Yearning"],
-        "missing": ["Yearning"],
+        "homesick": ["Lonely", "Sad"],
+        "miss": ["Lonely", "Sad"],
+        "missing": ["Lonely", "Sad"],
 
         // Anger
-        "anger": ["Frustrated"],
-        "rage": ["Frustrated"],
-        "hate": ["Frustrated"],
-        "pissed": ["Frustrated"],
-        "pissed off": ["Frustrated"],
-        "irritable": ["Frustrated"],
-        "fed up": ["Frustrated"],
+        "anger": ["Angry"],
+        "rage": ["Angry"],
+        "hate": ["Angry", "Frustrated"],
+        "pissed": ["Angry"],
+        "pissed off": ["Angry"],
 
         // Self-worth
-        "not good enough": ["Inadequate"],
-        "useless": ["Inadequate"],
-        "worthless": ["Inadequate"],
-        "failure": ["Inadequate"],
-        "imposter": ["Inadequate", "Doubtful"],
-        "impostor": ["Inadequate", "Doubtful"],
-        "self doubt": ["Doubtful", "Inadequate"],
-        "hate myself": ["Inadequate", "Guilty"],
-        "jealous": ["Inadequate", "Insecure"],
-        "envious": ["Inadequate", "Insecure"],
+        "failure": ["Ashamed"],
+        "imposter": ["Insecure", "Doubtful"],
+        "impostor": ["Insecure", "Doubtful"],
+        "self doubt": ["Doubtful", "Insecure"],
+        "hate myself": ["Ashamed", "Guilty"],
         "guilt": ["Guilty"],
-        "shame": ["Guilty"],
-        "embarrassed": ["Guilty"],
+        "shame": ["Ashamed"],
         "regret": ["Guilty"],
 
         // Unheard & withdrawn
-        "ignored": ["Silenced", "Misunderstood"],
-        "unheard": ["Silenced", "Misunderstood"],
-        "not heard": ["Silenced", "Misunderstood"],
+        "not heard": ["Unheard"],
         "not understood": ["Misunderstood"],
-        "nobody listens": ["Silenced", "Misunderstood"],
-        "no one listens": ["Silenced", "Misunderstood"],
-        "judged": ["Misunderstood"],
-        "criticized": ["Misunderstood", "Hurt"],
-        "bottled up": ["Constricted"],
-        "holding back": ["Constricted"],
-        "choked up": ["Constricted"],
-        "lump in my throat": ["Constricted"],
-        "tight chest": ["Constricted", "Anxious"],
-        "shy": ["Withdrawn"],
-        "antisocial": ["Withdrawn"],
+        "nobody listens": ["Unheard"],
+        "no one listens": ["Unheard"],
+        "criticized": ["Defensive", "Hurt"],
+        "holding back": ["Unheard"],
+        "choked up": ["Emotional", "Unheard"],
+        "lump in my throat": ["Unheard", "Sad"],
+        "tight chest": ["Anxious"],
         "want to be alone": ["Withdrawn"],
-        "disappear": ["Withdrawn", "Hollow"],
-        "invisible": ["Withdrawn", "Hollow"],
-        "hiding": ["Withdrawn"],
+        "disappear": ["Withdrawn", "Empty"],
+        "invisible": ["Unheard", "Lonely"],
 
         // Mind
-        "lost": ["Searching", "Confused"],
         "confusion": ["Confused"],
-        "can't focus": ["Scattered", "Foggy"],
-        "can't concentrate": ["Scattered", "Foggy"],
+        "can't focus": ["Distracted", "Foggy"],
+        "can't concentrate": ["Distracted", "Foggy"],
         "can't think": ["Foggy"],
-        "brain fog": ["Foggy"],
-        "indecisive": ["Hesitant", "Doubtful"],
-        "fascinated": ["Curious"],
-        "in the zone": ["Focused", "Flowing"],
+        "in the zone": ["Focused", "Inspired"],
 
         // Calm & okay
-        "calm": ["Peaceful"],
-        "relaxed": ["Peaceful"],
-        "chill": ["Peaceful"],
-        "content": ["Peaceful"],
-        "at peace": ["Peaceful"],
-        "peace": ["Peaceful"],
-        "relieved": ["Peaceful"],
-        "relief": ["Peaceful"],
-        "okay": ["Stable"],
-        "ok": ["Stable"],
-        "alright": ["Stable"],
-        "fine": ["Stable"],
+        "peace": ["Calm"],
 
         // Good energy
-        "great": ["Joyful"],
-        "amazing": ["Joyful"],
-        "awesome": ["Joyful"],
-        "wonderful": ["Joyful"],
-        "fantastic": ["Joyful"],
-        "excited": ["Passionate", "Joyful"],
-        "thrilled": ["Joyful", "Passionate"],
-        "silly": ["Playful"],
-        "goofy": ["Playful"],
-        "energized": ["Radiant"],
-        "energetic": ["Radiant"],
-        "alive": ["Radiant"],
-        "hopeful": ["Open"],
-        "optimistic": ["Open"],
-        "proud": ["Confident"],
-        "accomplished": ["Capable", "Confident"],
-        "productive": ["Driven", "Capable"],
-        "powerful": ["Empowered"],
-        "in control": ["Empowered", "Assured"],
-        "courage": ["Bold"],
+        "great": ["Happy"],
+        "amazing": ["Happy"],
+        "awesome": ["Happy"],
+        "wonderful": ["Happy"],
+        "fantastic": ["Happy"],
+        "powerful": ["Confident"],
+        "in control": ["Confident"],
+        "courage": ["Brave"],
 
         // Love & connection
-        "love": ["Loving"],
-        "in love": ["Loving", "Passionate"],
-        "loved": ["Accepted", "Loving"],
-        "appreciated": ["Accepted"],
+        "love": ["Caring"],
+        "in love": ["Caring", "Excited"],
         "gratitude": ["Grateful"],
-        "compassion": ["Compassionate"],
-        "empathy": ["Compassionate"],
-        "forgive": ["Forgiving"],
-        "feel seen": ["Understood", "Heard"],
-        "spiritual": ["Transcendent", "Connected"],
-        "awe": ["Transcendent"],
-        "let go": ["Surrendering", "Yielding"],
-        "letting go": ["Surrendering", "Yielding"],
-        "purpose": ["Purposeful"],
+        "compassion": ["Caring"],
+        "empathy": ["Caring"],
+        "forgive": ["Caring"],
+        "feel seen": ["Understood"],
+        "spiritual": ["Connected", "In awe"],
+        "let go": ["Free"],
+        "purpose": ["Connected"],
+
+        // Added with the v2 library
+        "stuck": ["Bored", "Frustrated"],
+        "tired of": ["Frustrated"],
+        "sick of": ["Frustrated"],
     ]
 
     // MARK: - Word Lists
 
     /// Synonyms too generic to count as evidence in free text ("here", "real", "deep").
     /// They still work in Browse search.
-    private static let freeTextIgnored: Set<String> = [
-        "here", "real", "true", "original", "legitimate", "plain", "obvious", "evident", "transparent",
-        "full", "entire", "total", "complete", "joined", "linked", "attached", "coupled", "united",
-        "integrated", "amalgamated", "consolidated", "merged", "constant", "reliable", "firm", "solid",
-        "established", "entrenched", "positive", "certain", "guaranteed", "effective", "direct", "frank",
-        "digest", "absorb", "comprehend", "integrate", "analyze", "landing", "adjusting", "resting",
-        "held", "backed", "able", "bright", "shining", "brilliant", "smooth", "continuous", "received",
-        "accessible", "responsive", "welcoming", "informed", "sensible", "rational", "logical",
-        "physical", "moving", "shifting", "looking", "hunting", "exploring", "hearing", "observing",
-        "noting", "pausing", "lacking", "deep", "sharp", "soft", "mild", "delicate", "warm", "cold",
-        "blue", "quiet", "tight", "restricted", "flat", "cloudy", "intense", "hungry", "pushed",
-        "authorized", "enabled", "commanding", "interested", "understanding", "kind", "open", "naked",
-        "obliged", "excusing", "allowing", "accepting", "flexible", "brewing", "innate", "untaught",
-        "spontaneous", "divine", "vain", "seen", "unclosed", "unlocked", "unfastened", "ajar",
-        "unsealed", "intent",
+    static let freeTextIgnored: Set<String> = [
+        "down", "aware", "real", "complete", "positive", "exploring", "sharp", "blue",
+        "flat", "cloudy", "interested", "kind", "seen",
     ]
 
     /// Everyday words that only count when the user is describing a feeling
     /// ("I feel still", "so lost") or typed little else ("open, curious").
-    private static let needsCue: Set<String> = [
-        "still", "present", "open", "clear", "whole", "closed", "heard", "listening", "processing",
-        "searching", "settling", "lost", "fine", "okay", "ok", "alright", "stable", "connected",
-        "driven", "honest", "understood", "accepted", "supported", "safe", "bold", "broken", "content",
+    static let needsCue: Set<String> = [
+        "quiet", "free", "empty", "torn", "loved", "caring", "focused", "grounded",
+        "rested", "thoughtful", "foggy", "disconnected", "alive", "alone", "good", "settled",
+        "still", "present", "open", "clear", "whole", "closed", "heard", "listening",
+        "processing", "searching", "lost", "fine", "okay", "ok", "alright", "stable",
+        "connected", "driven", "honest", "understood", "accepted", "supported", "safe", "bold",
+        "broken", "content",
     ]
 
     private static let cueWords: Set<String> = [
@@ -359,7 +289,7 @@ enum EmotionMatcher {
         let firstPosition: Int
     }
 
-    private static func scan(_ clause: Clause, offset: Int, into hits: inout [UUID: Hit]) {
+    private static func scan(_ clause: Clause, offset: Int, into hits: inout [String: Hit]) {
         let tokens = clause.tokens
         var i = 0
         var lastMatchEnd = 0
@@ -458,11 +388,11 @@ enum EmotionMatcher {
         zip(words, words.dropFirst()).contains { ($0 == "kind" || $0 == "sort") && $1 == "of" }
     }
 
-    private static func record(_ terms: [Term], intensity: Int, position: Int, into hits: inout [UUID: Hit]) {
+    private static func record(_ terms: [Term], intensity: Int, position: Int, into hits: inout [String: Hit]) {
         // An exact emotion name beats synonyms that happen to share the word ("hesitant").
         let named = terms.filter { $0.kind == .name }
         let chosen = named.isEmpty ? terms : named
-        var seen = Set<UUID>()
+        var seen = Set<String>()
         for term in chosen where seen.insert(term.emotion.id).inserted {
             if var hit = hits[term.emotion.id] {
                 hit.score += term.weight
@@ -474,22 +404,7 @@ enum EmotionMatcher {
         }
     }
 
-    /// "Disconnected" and "Reflective" exist in two centers. Keep the copy whose center has the
-    /// most other matches in this text; on a tie, the one listed first in the library.
-    private static func dropDuplicateNames(_ hits: [Hit]) -> [Hit] {
-        func support(_ hit: Hit) -> Int {
-            hits.filter { $0.emotion.name != hit.emotion.name && $0.emotion.center == hit.emotion.center }.count
-        }
-        return Dictionary(grouping: hits, by: { $0.emotion.name }).values.compactMap { group in
-            group.max { a, b in
-                let (sa, sb) = (support(a), support(b))
-                if sa != sb { return sa < sb }
-                return libraryIndex(a.emotion) > libraryIndex(b.emotion)
-            }
-        }
-    }
-
-    private static let libraryOrder: [UUID: Int] = Dictionary(
+    private static let libraryOrder: [String: Int] = Dictionary(
         uniqueKeysWithValues: EmotionLibrary.all.enumerated().map { ($1.id, $0) }
     )
 

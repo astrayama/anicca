@@ -18,9 +18,7 @@ struct MainTabView: View {
             .tabItem { Label("Home", systemImage: "house.fill") }
             .tag(MainTab.home)
 
-            NavigationStack {
-                LogView()
-            }
+            LogView()
             .tabItem {
                 Label("Log", systemImage: "plus.circle.fill")
             }

@@ -166,8 +166,9 @@ Claude already fixed in the `claude/project-status-app-store-a7257b` branch: bun
   - [ ] Email sign-up → onboarding → main tabs
   - [ ] Sign out → **Continue with Apple** — the Apple sheet appears exactly **once**
   - [ ] Sign out → **Continue with Google** works
-  - [ ] Free-text entry → "Map my feelings" returns emotions → save with intensities
-  - [ ] Browse emotions → save a check-in
+  - [ ] Log tab: type a sentence → "Map my feelings" adds words → Next → save
+  - [ ] Log tab: choose an energy zone → pick words → adjust intensity dots → save
+  - [ ] After saving, the words appear under "Recent" on the Log tab
   - [ ] Insights: radar renders; weekly summary is blurred on a free account
   - [ ] Paywall shows real App Store prices + the renewal disclosure text
   - [ ] Sandbox-purchase Pro → badge flips, weekly insight unblurs
@@ -179,7 +180,7 @@ Claude already fixed in the `claude/project-status-app-store-a7257b` branch: bun
 ## Phase 7 — Listing + submit 🧑 ⏱ ~2 h
 
 - [ ] **7.1 Screenshots** ⏱ 40 min
-  **Do:** Seed a demo account with ~2 weeks of varied check-ins first. Capture on iPhone 17 Pro Max simulator (6.9") — and a 6.5" set if App Store Connect asks: Home, free-text entry, mapping result, Insights radar, weekly insight, timeline. (Claude can stage and capture these with you.)
+  **Do:** Seed a demo account with ~2 weeks of varied check-ins first. Capture on iPhone 17 Pro Max simulator (6.9") — and a 6.5" set if App Store Connect asks: Home, Log start screen (energy zones), a zone's words, the review screen, Insights radar, weekly insight, timeline. (Claude can stage and capture these with you.)
 
 - [ ] **7.2 Metadata** ⏱ 30 min
   **Do:** Subtitle ≤30 chars (e.g. "Mood & energy journaling"). Description that leads with what the app does and includes: *"Anicca is a self-reflection tool, not a medical device or a substitute for professional care."* Keywords: mood tracker, emotion journal, chakra, energy, mindfulness, self care, feelings log. Support URL + copyright.
@@ -200,4 +201,4 @@ Claude already fixed in the `claude/project-status-app-store-a7257b` branch: bun
 
 ## Parking lot — after approval, not before
 
-Deliberately deferred; none block submission: circumplex emotion library (SS-6) · weekly-summary enrichment (SS-8) · timeline calendar grid (SS-9) · server-side validation of re-auth tokens in delete-account · swipe-to-delete in Insights is a silent no-op (needs a `List`) · the 25-check-in warning is never shown · email confirmations · tests + CI.
+Deliberately deferred; none block submission: weekly-summary enrichment (SS-8) · timeline calendar grid (SS-9) · server-side validation of re-auth tokens in delete-account · swipe-to-delete in Insights is a silent no-op (needs a `List`) · the 25-check-in warning is never shown · email confirmations · tests + CI.
