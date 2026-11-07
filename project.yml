@@ -62,7 +62,7 @@ targets:
         SWIFT_EMIT_LOC_STRINGS: YES
         SWIFT_OBJC_BRIDGING_HEADER: ""
     scheme:
-      testTargets: []
+      testTargets: [AniccaTests]
       gatherCoverageData: false
     dependencies:
       - package: Supabase
@@ -76,3 +76,26 @@ targets:
       - sdk: SafariServices.framework
       - sdk: UserNotifications.framework
       - sdk: PDFKit.framework
+
+  # Unit tests for the emotion library, matcher and insights. The model and service files are
+  # compiled straight into the bundle (no app host), so RevenueCat and Supabase never start.
+  AniccaTests:
+    type: bundle.unit-test
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources:
+      - path: AniccaTests
+      - path: Anicca/Models/Emotion.swift
+      - path: Anicca/Models/EmotionLibrary.swift
+      - path: Anicca/Models/EnergyCenter.swift
+      - path: Anicca/Models/CheckIn.swift
+      - path: Anicca/Services/EmotionMatcher.swift
+      - path: Anicca/Services/InsightsService.swift
+      - path: Anicca/Theme/AniccaTheme.swift
+      - path: Anicca/Extensions/Color+Hex.swift
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        PRODUCT_BUNDLE_IDENTIFIER: com.screenseiji.anicca.tests
+        DEVELOPMENT_TEAM: P788RWL6YN
+        CODE_SIGN_STYLE: Automatic
