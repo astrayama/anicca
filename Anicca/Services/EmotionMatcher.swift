@@ -6,7 +6,6 @@ struct MappedEmotion: Identifiable {
     let id = UUID()
     let emotion: Emotion
     var intensity: Int          // 1–5, pre-filled from the user's wording (default 3)
-    var isTouched: Bool = true  // Pre-filled means already "touched" → Save unlocks immediately
 }
 
 // MARK: - Emotion Matcher
@@ -44,7 +43,7 @@ enum EmotionMatcher {
                     ? a.firstPosition < b.firstPosition
                     : libraryIndex(a.emotion) < libraryIndex(b.emotion)
             }
-            .map { MappedEmotion(emotion: $0.emotion, intensity: $0.intensity, isTouched: true) }
+            .map { MappedEmotion(emotion: $0.emotion, intensity: $0.intensity) }
     }
 
     /// Ranks library emotions against a search query (Browse screen). Empty query → no results.

@@ -25,6 +25,16 @@ enum AniccaTheme {
     static let chakraThirdEye = Color(hex: "#3F51B5")
     static let chakraCrown = Color(hex: "#8E44AD")
 
+    // Darker "ink" versions for icons and labels on light backgrounds. Several chakra colours
+    // (Solar yellow, Sacral orange, Heart green) are under 3:1 on white; these are all 4.3:1 or more.
+    static let chakraRootInk = Color(hex: "#A93226")
+    static let chakraSacralInk = Color(hex: "#A04000")
+    static let chakraSolarInk = Color(hex: "#806600")
+    static let chakraHeartInk = Color(hex: "#1E7A45")
+    static let chakraThroatInk = Color(hex: "#1F618D")
+    static let chakraThirdEyeInk = Color(hex: "#3F51B5")
+    static let chakraCrownInk = Color(hex: "#7D3C98")
+
     // MARK: - Energy zones (Log tab)
     // Each accent is at least 5.3:1 against every zone tint, so it can carry text as well as icons.
     // Zone tiles use textPrimary or the accent for text, never textSecondary (about 4:1 on these tints).

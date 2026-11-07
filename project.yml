@@ -90,6 +90,7 @@ targets:
       - path: Anicca/Models/EmotionLibrary+Legacy.swift
       - path: Anicca/Models/EmotionZone.swift
       - path: Anicca/Models/EmotionZone+Interim.swift
+      - path: Anicca/Models/EmotionSelection.swift
       - path: Anicca/Models/EnergyCenter.swift
       - path: Anicca/Models/CheckIn.swift
       - path: Anicca/Services/EmotionMatcher.swift

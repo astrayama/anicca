@@ -48,17 +48,58 @@ enum Strings {
 
     enum Log {
         static let title = "How are you feeling?"
-        static let subtitle = "Tap the emotions that resonate with you right now"
-        static let searchPlaceholder = "Search emotions"
-        static let expandAll = "Expand All"
-        static let collapseAll = "Collapse All"
-        static let intensityTitle = "How strongly?"
-        static let notePlaceholder = "Add a note... (optional)"
-        static let saveCheckIn = "Save Check-in"
-        static let cancel = "Cancel"
+        static let checkInNumber = "Check-in #%d"
+        static let notePlaceholder = "Add a note (optional)"
+        static let saveCheckIn = "Save check-in"
         static let savedToast = "Check-in saved ✦"
         static let freeLimitWarning = "You have %d free check-ins left this month."
         static let freeLimitReached = "You've reached your monthly limit. Upgrade to keep logging."
+
+        // Start screen
+        static let fieldPlaceholder = "Type a word, or describe how you feel"
+        static let recent = "Recent"
+        static let chooseByEnergy = "Or choose by energy"
+        static let matches = "Matching words"
+        static let fromWhatYouWrote = "From what you wrote"
+        static let noMatchTitle = "No words match \u{201C}%@\u{201D}"
+        static let noMatchBody = "Try another word, or write a sentence and tap Map my feelings. You can also choose an energy below."
+        static let mapButton = "Map my feelings"
+        static let mapHint = "Matching happens on your iPhone."
+        static let mapAdded = "Added %@"
+        static let mapAlreadySelected = "Those words are already in your list."
+        static let mapNoMatch = "We couldn't pick out a feeling word. Try choosing an energy below."
+        static let clear = "Clear"
+        static let clearConfirmTitle = "Clear this check-in?"
+        static let clearConfirmAction = "Clear %d selected"
+        static let done = "Done"
+
+        // Words
+        static let addWord = "Add"
+        static let removeWord = "Remove"
+        static let wordA11yLabel = "%@, %@ center"
+        static let zoneSelectedCount = "%d selected"
+        static let longPressHint = "Touch and hold a word to see what it means."
+
+        // Tray
+        static let next = "Next"
+        static let nextA11y = "Next, %d selected"
+        static let removeA11y = "Remove %@"
+
+        // Review
+        static let reviewTitle = "How strong is each feeling?"
+        static let reviewSubtitle = "Tap the dots to change it. 3 is in the middle."
+        static let reviewNavTitle = "Review"
+        static let addMore = "Add more"
+        static let reviewEmptyTitle = "Nothing selected yet"
+        static let chooseFeelings = "Choose feelings"
+        static let noteTitle = "Note"
+        static let intensityLabels = ["A little", "Somewhat", "Moderately", "Very", "Intensely"]
+        static let intensityA11yLabel = "%@ intensity"
+        static let intensityA11yValue = "%d of 5, %@"
+
+        static func intensityLabel(_ value: Int) -> String {
+            intensityLabels[min(max(value, 1), intensityLabels.count) - 1]
+        }
     }
 
     enum Zones {

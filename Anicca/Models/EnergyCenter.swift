@@ -47,6 +47,19 @@ enum EnergyCenter: String, CaseIterable, Codable, Identifiable {
         }
     }
 
+    /// Darker version of `color` for icons and text on light backgrounds.
+    var inkColor: Color {
+        switch self {
+        case .root: return AniccaTheme.chakraRootInk
+        case .sacral: return AniccaTheme.chakraSacralInk
+        case .solar: return AniccaTheme.chakraSolarInk
+        case .heart: return AniccaTheme.chakraHeartInk
+        case .throat: return AniccaTheme.chakraThroatInk
+        case .thirdEye: return AniccaTheme.chakraThirdEyeInk
+        case .crown: return AniccaTheme.chakraCrownInk
+        }
+    }
+
     var sfSymbol: String {
         switch self {
         case .root: return "shield.fill"

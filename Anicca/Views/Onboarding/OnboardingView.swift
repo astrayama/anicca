@@ -177,8 +177,8 @@ private struct HowItWorksStep: View {
 
     private let steps: [(String, String, String)] = [
         ("01", "Notice", "Pause and tune in to what you're feeling — there's no right answer."),
-        ("02", "Tap", "Choose the emotions that resonate. They span all seven energy centers."),
-        ("03", "Reflect", "Rate intensity and add an optional note. Patterns emerge over time.")
+        ("02", "Name it", "Type a word, describe your mood, or pick an energy, then choose the words that fit. Each word belongs to one of the seven centers."),
+        ("03", "Reflect", "Set how strong each feeling is and add a note if you like. Patterns emerge over time.")
     ]
 
     var body: some View {
