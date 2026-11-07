@@ -48,19 +48,15 @@ struct ZoneWordsView: View {
     }
 
     private var header: some View {
-        HStack(alignment: .top, spacing: AniccaTheme.Spacing.s12) {
+        HStack(alignment: .center, spacing: AniccaTheme.Spacing.s12) {
             Image(systemName: zone.sfSymbol)
                 .font(.title2)
                 .foregroundStyle(zone.accent)
                 .accessibilityHidden(true)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(zone.displayName)
-                    .font(.system(.title2, design: .rounded, weight: .bold))
-                    .foregroundStyle(AniccaTheme.textPrimary)
-                Text(zone.energyDescription)
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(zone.accent)
-            }
+            Text(zone.energyDescription)
+                .font(.headline)
+                .foregroundStyle(zone.accent)
+                .fixedSize(horizontal: false, vertical: true)
             Spacer(minLength: 0)
         }
         .padding(AniccaTheme.Spacing.s16)

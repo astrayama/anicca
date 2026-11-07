@@ -59,6 +59,8 @@ struct SelectionTray: View {
         .padding(.vertical, AniccaTheme.Spacing.s12)
         .frame(maxWidth: .infinity)
         .background(.regularMaterial)
+        // The tray sits over the content; cap its text so it can't fill the screen.
+        .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
         .animation(AniccaTheme.springAnimation, value: items.map(\.id))
     }
 }

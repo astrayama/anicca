@@ -75,7 +75,7 @@ struct ZoneTile: View {
                     .foregroundStyle(AniccaTheme.textPrimary)
                     .fixedSize(horizontal: false, vertical: true)
             }
-            .frame(maxWidth: .infinity, minHeight: isWide ? 0 : 128, alignment: .topLeading)
+            .frame(maxWidth: .infinity, maxHeight: isWide ? nil : .infinity, alignment: .topLeading)
             .padding(14)
             .background {
                 RoundedRectangle(cornerRadius: 18, style: .continuous)
