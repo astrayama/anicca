@@ -44,7 +44,8 @@ final class UserProfile {
         reminderTime: Date? = nil,
         createdAt: Date = Date()
     ) {
-        self.id = id
+        // Lowercase whichever path built the profile (the row, or the fallback from the session).
+        self.id = UserID.normalized(id)
         self.email = email
         self.displayName = displayName
         self.planTierRaw = planTier.rawValue
@@ -77,6 +78,24 @@ final class UserProfile {
             return "\(first)\(second)".uppercased()
         }
         return String(source.prefix(2)).uppercased()
+    }
+}
+
+extension UserProfile {
+    /// The profile as read from the `profiles` row.
+    convenience init(row: UserProfileDTO) {
+        self.init(
+            id: row.id,
+            email: row.email,
+            displayName: row.display_name,
+            planTier: PlanTier(rawValue: row.plan_tier) ?? .free,
+            checkInStreak: row.check_in_streak,
+            lastCheckInDate: row.last_check_in_date,
+            totalCheckIns: row.total_check_ins,
+            reminderEnabled: row.reminder_enabled,
+            reminderTime: row.reminder_time,
+            createdAt: row.created_at
+        )
     }
 }
 

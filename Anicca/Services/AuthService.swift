@@ -37,7 +37,7 @@ final class AuthService: NSObject, ObservableObject {
         do {
             let session = try await client.auth.session
             await loadProfile(
-                userId: session.user.id.uuidString,
+                userId: UserID.normalized(session.user.id),
                 email: session.user.email ?? "",
                 displayName: session.user.userMetadata["display_name"]?.stringValue
             )
@@ -79,8 +79,9 @@ final class AuthService: NSObject, ObservableObject {
             // Without a session the profile insert would be rejected by RLS, so it waits until
             // the first signed-in load (see `loadProfile`).
             guard let session = response.session else { return .confirmationEmailSent }
-            try await createProfile(userId: session.user.id.uuidString, email: email, displayName: displayName)
-            await loadProfile(userId: session.user.id.uuidString, email: email)
+            let userId = UserID.normalized(session.user.id)
+            try await createProfile(userId: userId, email: email, displayName: displayName)
+            await loadProfile(userId: userId, email: email)
             self.isAuthenticated = true
             return .signedIn
         } catch {
@@ -94,7 +95,7 @@ final class AuthService: NSObject, ObservableObject {
         do {
             let session = try await client.auth.signIn(email: email, password: password)
             await loadProfile(
-                userId: session.user.id.uuidString,
+                userId: UserID.normalized(session.user.id),
                 email: session.user.email ?? email,
                 displayName: session.user.userMetadata["display_name"]?.stringValue
             )
@@ -109,7 +110,7 @@ final class AuthService: NSObject, ObservableObject {
         do {
             let session = try await client.auth.session(from: url)
             await loadProfile(
-                userId: session.user.id.uuidString,
+                userId: UserID.normalized(session.user.id),
                 email: session.user.email ?? "",
                 displayName: session.user.userMetadata["display_name"]?.stringValue
             )
@@ -157,8 +158,9 @@ final class AuthService: NSObject, ObservableObject {
                 let formatted = PersonNameComponentsFormatter().string(from: name)
                 return formatted.isEmpty ? nil : formatted
             }
-            try? await ensureProfileExists(userId: session.user.id.uuidString, email: email, displayName: displayName)
-            await loadProfile(userId: session.user.id.uuidString, email: email)
+            let userId = UserID.normalized(session.user.id)
+            try? await ensureProfileExists(userId: userId, email: email, displayName: displayName)
+            await loadProfile(userId: userId, email: email)
             self.isAuthenticated = true
             self.authProvider = .apple
         } catch {
@@ -183,8 +185,9 @@ final class AuthService: NSObject, ObservableObject {
             )
             let email = session.user.email ?? result.user.profile?.email ?? ""
             let displayName = result.user.profile?.name
-            try? await ensureProfileExists(userId: session.user.id.uuidString, email: email, displayName: displayName)
-            await loadProfile(userId: session.user.id.uuidString, email: email)
+            let userId = UserID.normalized(session.user.id)
+            try? await ensureProfileExists(userId: userId, email: email, displayName: displayName)
+            await loadProfile(userId: userId, email: email)
             self.isAuthenticated = true
         } catch {
             debugLog("🔴 Google Sign-in Error: \(error)")
@@ -252,9 +255,10 @@ final class AuthService: NSObject, ObservableObject {
         googleIDToken: String? = nil,
         emailPassword: String? = nil
     ) async throws {
-        guard let userId = currentUser?.id else { throw AppError.notAuthenticated }
+        guard currentUser != nil else { throw AppError.notAuthenticated }
         guard let session = try? await client.auth.session else { throw AppError.notAuthenticated }
 
+        let userId = UserID.normalized(session.user.id)
         let jwt = session.accessToken
 
         struct DeleteAccountPayload: Encodable {
@@ -320,6 +324,7 @@ final class AuthService: NSObject, ObservableObject {
     /// created (email sign-ups that had to confirm first get no session, so they skip
     /// `createProfile`), so insert it without touching an existing row and try once more.
     private func loadProfile(userId: String, email: String, displayName: String? = nil) async {
+        let userId = UserID.normalized(userId)
         do {
             self.currentUser = try await fetchProfile(userId: userId)
             debugLog("🟢 AuthService: Successfully loaded profile from Supabase for \(email).")
@@ -354,18 +359,7 @@ final class AuthService: NSObject, ObservableObject {
             .execute()
             .value
 
-        return UserProfile(
-            id: row.id,
-            email: row.email,
-            displayName: row.display_name,
-            planTier: PlanTier(rawValue: row.plan_tier) ?? .free,
-            checkInStreak: row.check_in_streak,
-            lastCheckInDate: row.last_check_in_date,
-            totalCheckIns: row.total_check_ins,
-            reminderEnabled: row.reminder_enabled,
-            reminderTime: row.reminder_time,
-            createdAt: row.created_at
-        )
+        return UserProfile(row: row)
     }
 
     // MARK: - Updates

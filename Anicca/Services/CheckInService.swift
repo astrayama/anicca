@@ -15,6 +15,22 @@ final class CheckInService: ObservableObject {
 
     func setContext(_ context: ModelContext) {
         self.modelContext = context
+        lowercaseLegacyUserIDsOnce(in: context)
+    }
+
+    /// Check-ins saved before user IDs were normalized can hold the UPPERCASE spelling, which the
+    /// lowercase lookups no longer match. Repairs them once per install; the repair itself is
+    /// idempotent, so the flag is only set after it has saved.
+    private func lowercaseLegacyUserIDsOnce(in context: ModelContext) {
+        let defaults = UserDefaults.standard
+        guard !defaults.bool(forKey: AppConfig.checkInUserIDsLowercasedKey) else { return }
+        do {
+            let changed = try LocalCheckInStore(context: context).lowercaseUserIDs()
+            debugLog("🟢 CheckInService: lowercased the user ID on \(changed) local check-in(s).")
+            defaults.set(true, forKey: AppConfig.checkInUserIDsLowercasedKey)
+        } catch {
+            debugLog("🔴 CheckInService: lowercasing local user IDs failed: \(error). Will retry next launch.")
+        }
     }
 
     // MARK: - Save
@@ -111,11 +127,7 @@ final class CheckInService: ObservableObject {
 
     func fetchLocalCheckIns(userId: String) -> [CheckIn] {
         guard let context = modelContext else { return [] }
-        let descriptor = FetchDescriptor<CheckIn>(
-            predicate: #Predicate { $0.userId == userId },
-            sortBy: [SortDescriptor(\.createdAt, order: .reverse)]
-        )
-        return (try? context.fetch(descriptor)) ?? []
+        return LocalCheckInStore(context: context).checkIns(for: userId)
     }
 
     func loadRemoteCheckIns(userId: String) async {
@@ -187,10 +199,7 @@ final class CheckInService: ObservableObject {
     // MARK: - Count
 
     func currentMonthCount(userId: String) -> Int {
-        let calendar = Calendar.current
-        let now = Date()
-        guard let monthStart = calendar.dateInterval(of: .month, for: now)?.start else { return 0 }
-        let all = fetchLocalCheckIns(userId: userId)
-        return all.filter { $0.createdAt >= monthStart }.count
+        guard let context = modelContext else { return 0 }
+        return LocalCheckInStore(context: context).monthCount(for: userId)
     }
 }
