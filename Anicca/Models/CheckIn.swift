@@ -20,7 +20,7 @@ final class CheckIn {
         syncedToSupabase: Bool = false
     ) {
         self.id = id
-        self.userId = userId
+        self.userId = UserID.normalized(userId)
         self.createdAt = createdAt
         self.note = note
         self.entries = entries

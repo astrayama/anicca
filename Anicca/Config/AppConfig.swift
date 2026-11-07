@@ -45,6 +45,7 @@ enum AppConfig {
     static let freeMonthlyWarningThreshold = 25
     static let onboardingCompleteKey = "anicca_onboarding_complete"
     static let lastReviewVersionKey = "anicca_last_review_version"
+    static let checkInUserIDsLowercasedKey = "anicca_checkin_user_ids_lowercased"
     static let reminderNotificationID = "anicca.daily.reminder"
 
     // MARK: - URLs

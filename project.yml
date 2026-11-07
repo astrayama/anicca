@@ -93,6 +93,9 @@ targets:
       - path: Anicca/Models/EmotionSelection.swift
       - path: Anicca/Models/EnergyCenter.swift
       - path: Anicca/Models/CheckIn.swift
+      - path: Anicca/Models/UserID.swift
+      - path: Anicca/Models/UserProfile.swift
+      - path: Anicca/Services/LocalCheckInStore.swift
       - path: Anicca/Services/EmotionMatcher.swift
       - path: Anicca/Services/InsightsService.swift
       - path: Anicca/Theme/AniccaTheme.swift
