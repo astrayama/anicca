@@ -87,12 +87,16 @@ targets:
       - path: AniccaTests
       - path: Anicca/Models/Emotion.swift
       - path: Anicca/Models/EmotionLibrary.swift
+      - path: Anicca/Models/EmotionLibrary+Legacy.swift
+      - path: Anicca/Models/EmotionZone.swift
+      - path: Anicca/Models/EmotionZone+Interim.swift
       - path: Anicca/Models/EnergyCenter.swift
       - path: Anicca/Models/CheckIn.swift
       - path: Anicca/Services/EmotionMatcher.swift
       - path: Anicca/Services/InsightsService.swift
       - path: Anicca/Theme/AniccaTheme.swift
       - path: Anicca/Extensions/Color+Hex.swift
+      - path: Anicca/Config/Strings.swift
     settings:
       base:
         GENERATE_INFOPLIST_FILE: YES

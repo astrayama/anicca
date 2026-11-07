@@ -135,13 +135,13 @@ struct InsightsService {
     func valenceTrend(in entries: [EmotionEntry]) -> (positive: Int, neutral: Int, negative: Int) {
         var pos = 0, neu = 0, neg = 0
         for entry in entries {
-            let center = entry.energyCenter
-            if let emotion = EmotionLibrary.byCenter[center]?.first(where: { $0.name.caseInsensitiveCompare(entry.emotionName) == .orderedSame }) {
-                switch emotion.valence {
-                case .positive: pos += 1
-                case .neutral: neu += 1
-                case .negative: neg += 1
-                }
+            // Resolves current words, words that moved center, and v1 words that were renamed or
+            // removed, so old check-ins keep counting.
+            switch EmotionLibrary.valence(forStoredName: entry.emotionName, center: entry.energyCenter) {
+            case .positive: pos += 1
+            case .neutral: neu += 1
+            case .negative: neg += 1
+            case nil: break
             }
         }
         return (pos, neu, neg)

@@ -247,7 +247,7 @@ struct EmotionBrowseView: View {
                     Text(emotion.name)
                         .font(.system(size: 16, weight: .semibold))
                         .foregroundStyle(isSelected ? emotion.center.color : AniccaTheme.textPrimary)
-                    Text(emotion.description)
+                    Text(emotion.definition)
                         .font(.system(size: 13, weight: .regular))
                         .foregroundStyle(AniccaTheme.textSecondary)
                         .lineLimit(2)

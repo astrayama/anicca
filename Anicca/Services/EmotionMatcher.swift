@@ -26,7 +26,7 @@ enum EmotionMatcher {
 
     /// Maps free text to at most `limit` emotions, returned in the order they appear in the text.
     static func match(_ text: String, limit: Int = 5) -> [MappedEmotion] {
-        var hits: [UUID: Hit] = [:]
+        var hits: [String: Hit] = [:]
         var position = 0
         for clause in clauses(in: text) {
             scan(clause, offset: position, into: &hits)
@@ -359,7 +359,7 @@ enum EmotionMatcher {
         let firstPosition: Int
     }
 
-    private static func scan(_ clause: Clause, offset: Int, into hits: inout [UUID: Hit]) {
+    private static func scan(_ clause: Clause, offset: Int, into hits: inout [String: Hit]) {
         let tokens = clause.tokens
         var i = 0
         var lastMatchEnd = 0
@@ -458,11 +458,11 @@ enum EmotionMatcher {
         zip(words, words.dropFirst()).contains { ($0 == "kind" || $0 == "sort") && $1 == "of" }
     }
 
-    private static func record(_ terms: [Term], intensity: Int, position: Int, into hits: inout [UUID: Hit]) {
+    private static func record(_ terms: [Term], intensity: Int, position: Int, into hits: inout [String: Hit]) {
         // An exact emotion name beats synonyms that happen to share the word ("hesitant").
         let named = terms.filter { $0.kind == .name }
         let chosen = named.isEmpty ? terms : named
-        var seen = Set<UUID>()
+        var seen = Set<String>()
         for term in chosen where seen.insert(term.emotion.id).inserted {
             if var hit = hits[term.emotion.id] {
                 hit.score += term.weight
@@ -489,7 +489,7 @@ enum EmotionMatcher {
         }
     }
 
-    private static let libraryOrder: [UUID: Int] = Dictionary(
+    private static let libraryOrder: [String: Int] = Dictionary(
         uniqueKeysWithValues: EmotionLibrary.all.enumerated().map { ($1.id, $0) }
     )
 

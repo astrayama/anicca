@@ -61,6 +61,29 @@ enum Strings {
         static let freeLimitReached = "You've reached your monthly limit. Upgrade to keep logging."
     }
 
+    enum Zones {
+        static let chargedName = "Charged & uneasy"
+        static let brightName = "Bright & lively"
+        static let steadyName = "Steady or mixed"
+        static let heavyName = "Heavy & low"
+        static let calmName = "Calm & settled"
+
+        static let chargedDescription = "High energy, doesn't feel good"
+        static let brightDescription = "High energy, feels good"
+        static let steadyDescription = "In between, or a bit of both"
+        static let heavyDescription = "Low energy, doesn't feel good"
+        static let calmDescription = "Low energy, feels good"
+
+        static let chargedExamples = "Anxious, stressed, angry"
+        static let brightExamples = "Happy, excited, proud"
+        static let steadyExamples = "Okay, torn, thoughtful"
+        static let heavyExamples = "Sad, tired, numb"
+        static let calmExamples = "Calm, safe, grateful"
+
+        /// %1$@ = energy description, %2$@ = examples.
+        static let accessibilityHint = "%1$@. For example: %2$@."
+    }
+
     enum Insights {
         static let title = "Insights"
         static let radarTitle = "Chakra Balance"

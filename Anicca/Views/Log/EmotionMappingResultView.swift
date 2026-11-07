@@ -164,7 +164,7 @@ private struct MappedEmotionCard: View {
             }
 
             // Description
-            Text(mapped.emotion.description)
+            Text(mapped.emotion.definition)
                 .font(.system(size: 13, weight: .regular))
                 .foregroundStyle(AniccaTheme.textSecondary)
                 .lineLimit(2)
