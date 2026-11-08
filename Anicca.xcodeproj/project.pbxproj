@@ -53,6 +53,7 @@
 		69305AB7B437BC35A83518BB /* EmotionMatcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0689F294F052BB99BEEE6DD5 /* EmotionMatcher.swift */; };
 		6F22C64793819FBC01D5873F /* EmotionLibrary+Integrity.swift in Sources */ = {isa = PBXBuildFile; fileRef = F051F80E47ABEC5E51FB9FF3 /* EmotionLibrary+Integrity.swift */; };
 		716D3D82AD44F78DB6367B43 /* EmotionLibrary.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4B591B543E7D4C4B0A06A47 /* EmotionLibrary.swift */; };
+		71A9DA3DB7DA622462EFA676 /* InsightsServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABA503DE9DB9BFA8F064F191 /* InsightsServiceTests.swift */; };
 		73496910DF9544F27B49E5D8 /* MainTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E650E0ECD3752AAA10FB85E /* MainTabView.swift */; };
 		766073B5032D369A6EA430E9 /* FlowLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED623837AF1E1E3DEB7290C1 /* FlowLayout.swift */; };
 		779543BFDC58104A0EE1E076 /* CheckIn.swift in Sources */ = {isa = PBXBuildFile; fileRef = 985ABEA5F66DB4AF42F3A1DC /* CheckIn.swift */; };
@@ -162,6 +163,7 @@
 		985ABEA5F66DB4AF42F3A1DC /* CheckIn.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CheckIn.swift; sourceTree = "<group>"; };
 		98BB9F3CD8C43C754F727F48 /* ShareSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareSheet.swift; sourceTree = "<group>"; };
 		9B9C17171B65828821156B5F /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		ABA503DE9DB9BFA8F064F191 /* InsightsServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InsightsServiceTests.swift; sourceTree = "<group>"; };
 		AFD803C0B78B056D719DE67A /* AppError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppError.swift; sourceTree = "<group>"; };
 		B184676A33284075EB9702E2 /* UserIDTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserIDTests.swift; sourceTree = "<group>"; };
 		B310CD5B11B05136310BD4C4 /* SupabaseConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupabaseConfig.swift; sourceTree = "<group>"; };
@@ -195,7 +197,7 @@
 		F608E418BDEF2E3616F52CE8 /* SetNewPasswordView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetNewPasswordView.swift; sourceTree = "<group>"; };
 		FA4C0C030D7828BE0F8AFAD2 /* OnboardingViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingViewModel.swift; sourceTree = "<group>"; };
 		FC5C6531063BFC6361B37EA5 /* SplashScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplashScreen.swift; sourceTree = "<group>"; };
-		"TEMP_5E420A6E-66D1-4CB6-924E-AFB31E7CE547" /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
+		"TEMP_93629C3D-824D-4B15-9011-B845A8B03CDB" /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -223,6 +225,7 @@
 				64F7CFA941119129A85D6D1F /* EmotionMatcherTests.swift */,
 				E8AB49B628F8189AC07451A1 /* EmotionModelTests.swift */,
 				CD45AD0C228526D3FCBA1B96 /* EmotionSelectionTests.swift */,
+				ABA503DE9DB9BFA8F064F191 /* InsightsServiceTests.swift */,
 				2A0986510A704E5AF384BF8B /* PasswordResetTests.swift */,
 				D77F0B460F58F030B9315BA0 /* PlanTests.swift */,
 				B184676A33284075EB9702E2 /* UserIDTests.swift */,
@@ -472,12 +475,12 @@
 			path = Paywall;
 			sourceTree = "<group>";
 		};
-		"TEMP_F5D39C67-4BEE-4D1C-8066-D076BB74279C" /* beautiful-jepsen-50aac9 */ = {
+		"TEMP_A1150F54-E76B-4F97-87BE-A4608F961251" /* anicca-app-store-captures-581301 */ = {
 			isa = PBXGroup;
 			children = (
-				"TEMP_5E420A6E-66D1-4CB6-924E-AFB31E7CE547" /* Secrets.xcconfig */,
+				"TEMP_93629C3D-824D-4B15-9011-B845A8B03CDB" /* Secrets.xcconfig */,
 			);
-			path = "beautiful-jepsen-50aac9";
+			path = "anicca-app-store-captures-581301";
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -672,6 +675,7 @@
 				1BA298CD9ED5399354D0961F /* EmotionZone.swift in Sources */,
 				4FAEAD02C783D5FC4873535F /* EnergyCenter.swift in Sources */,
 				E0B10723C3D0FB1E37706069 /* InsightsService.swift in Sources */,
+				71A9DA3DB7DA622462EFA676 /* InsightsServiceTests.swift in Sources */,
 				7D11CD1EB6ADEE560F588E4C /* LocalCheckInStore.swift in Sources */,
 				3785D053639D2BC9CA57A15F /* PasswordResetTests.swift in Sources */,
 				C354071442D10167CC09A174 /* PasswordRules.swift in Sources */,
@@ -692,7 +696,7 @@
 /* Begin XCBuildConfiguration section */
 		00037CD656F25532632C52B4 /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_5E420A6E-66D1-4CB6-924E-AFB31E7CE547" /* Secrets.xcconfig */;
+			baseConfigurationReference = "TEMP_93629C3D-824D-4B15-9011-B845A8B03CDB" /* Secrets.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CLANG_ANALYZER_NONNULL = YES;
@@ -779,7 +783,7 @@
 		};
 		9DA8B8F607A94EB5C91E6CB0 /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_5E420A6E-66D1-4CB6-924E-AFB31E7CE547" /* Secrets.xcconfig */;
+			baseConfigurationReference = "TEMP_93629C3D-824D-4B15-9011-B845A8B03CDB" /* Secrets.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CLANG_ANALYZER_NONNULL = YES;

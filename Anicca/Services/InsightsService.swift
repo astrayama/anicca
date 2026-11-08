@@ -71,22 +71,23 @@ struct InsightsService {
 
     // MARK: - Mood Timeline
 
-    /// Returns a dictionary keyed by calendar day → dominant center for that day (nil if no check-in).
-    func moodTimeline(for days: Int, from checkIns: [CheckIn]) -> [Date: EnergyCenter?] {
+    /// One key per calendar day for the last `days` days (today included), each mapped to that
+    /// day's dominant center, or nil when there was no check-in that day.
+    func moodTimeline(for days: Int, from checkIns: [CheckIn], now: Date = Date()) -> [Date: EnergyCenter?] {
         let calendar = Calendar.current
-        let today = calendar.startOfDay(for: Date())
+        let today = calendar.startOfDay(for: now)
         var result: [Date: EnergyCenter?] = [:]
 
         for offset in 0..<days {
             guard let day = calendar.date(byAdding: .day, value: -offset, to: today) else { continue }
-            result[day] = nil
+            // Not `result[day] = nil`: the values are optional, so that removes the key and the
+            // timeline ends up with no days at all.
+            result.updateValue(nil, forKey: day)
         }
 
         let grouped = Dictionary(grouping: checkIns) { calendar.startOfDay(for: $0.createdAt) }
-        for (day, sameDay) in grouped {
-            guard result[day] != nil || result.keys.contains(day) else { continue }
-            let allEntries = sameDay.flatMap { $0.entries }
-            result[day] = dominantCenter(in: allEntries)
+        for (day, sameDay) in grouped where result.keys.contains(day) {
+            result.updateValue(dominantCenter(in: sameDay.flatMap { $0.entries }), forKey: day)
         }
         return result
     }
