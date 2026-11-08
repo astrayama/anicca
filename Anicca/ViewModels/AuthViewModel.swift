@@ -97,6 +97,18 @@ final class AuthViewModel: ObservableObject {
         }
     }
 
+    /// The reset page sent the user back: the new password is saved, so they only need to sign in.
+    func showPasswordUpdated(email rememberedEmail: String?) {
+        mode = .signIn
+        clearErrors()
+        if email.isEmpty, let rememberedEmail {
+            email = rememberedEmail
+        }
+        password = ""
+        confirmPassword = ""
+        infoMessage = Strings.Auth.passwordUpdated
+    }
+
     func sendPasswordReset() async {
         guard email.contains("@") else {
             emailError = Strings.Auth.invalidEmail

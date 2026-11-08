@@ -23,6 +23,9 @@ final class AuthService: NSObject, ObservableObject {
     /// Set when a password-reset link has signed the user in: they choose a new password
     /// (`SetNewPasswordView`) before entering the app. Holds the account's email ("" if none).
     @Published private(set) var passwordResetEmail: String?
+    /// Set when the reset page sends the user back after changing their password on the web; the
+    /// sign-in screen then says so and fills in their email.
+    @Published private(set) var passwordUpdatedAt: Date?
 
     private var pendingDeleteContinuation: CheckedContinuation<String, Error>?
 
@@ -97,6 +100,7 @@ final class AuthService: NSObject, ObservableObject {
         defer { isLoading = false }
         do {
             let session = try await client.auth.signIn(email: email, password: password)
+            UserDefaults.standard.removeObject(forKey: AppConfig.lastResetEmailKey)
             await loadProfile(
                 userId: UserID.normalized(session.user.id),
                 email: session.user.email ?? email,
@@ -134,15 +138,43 @@ final class AuthService: NSObject, ObservableObject {
         }
     }
 
-    /// Emails a password-reset link that opens the app. Without `redirectTo`, Supabase links to
-    /// the Site URL (a web page) instead. The link only works on this device, which keeps the
-    /// PKCE code verifier for it.
+    /// Emails a password-reset link to the reset page on screenseiji.com, where the user chooses
+    /// a new password on any device (see `PasswordResetRequest` for why it skips the SDK). The
+    /// page's "Open Anicca" button comes back through `passwordWasUpdated()`.
     func resetPassword(email: String) async throws {
+        let request = PasswordResetRequest.make(
+            supabaseURL: AppConfig.supabaseURL,
+            apiKey: AppConfig.supabaseAnonKey,
+            email: email,
+            redirectTo: AppConfig.passwordResetPageURL
+        )
+        let data: Data
+        let response: URLResponse
         do {
-            try await client.auth.resetPasswordForEmail(email, redirectTo: AppConfig.authCallbackURL)
+            (data, response) = try await URLSession.shared.data(for: request)
         } catch {
-            throw SupabaseErrorMapper.map(error)
+            debugLog("🔴 AuthService.resetPassword failed: \(error)")
+            throw AppError.network
         }
+        let status = (response as? HTTPURLResponse)?.statusCode ?? 0
+        if let error = PasswordResetRequest.error(status: status, body: data) {
+            debugLog("🔴 AuthService.resetPassword: HTTP \(status) \(String(decoding: data, as: UTF8.self))")
+            throw error
+        }
+        UserDefaults.standard.set(email.trimmingCharacters(in: .whitespacesAndNewlines), forKey: AppConfig.lastResetEmailKey)
+    }
+
+    /// The reset page sent the user back after they changed their password there.
+    func passwordWasUpdated() {
+        guard !isAuthenticated else { return }
+        passwordUpdatedAt = Date()
+    }
+
+    /// The sign-in screen has shown the "password updated" note. Returns the email the reset was
+    /// requested for, if the app still knows it.
+    func takePasswordUpdatedNotice() -> String? {
+        passwordUpdatedAt = nil
+        return UserDefaults.standard.string(forKey: AppConfig.lastResetEmailKey)
     }
 
     /// Saves the password chosen after a reset link and finishes signing in.
