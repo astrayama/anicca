@@ -50,6 +50,10 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.screenseiji.anicca
         PRODUCT_NAME: Anicca
+        # iPhone only. Must be set here on the target: XcodeGen's iOS preset adds "1,2" at target
+        # level, which beats the project-level value, and a portrait-only iPad build is rejected
+        # by App Store Connect (error 90474: iPad multitasking needs all four orientations).
+        TARGETED_DEVICE_FAMILY: "1"
         MARKETING_VERSION: "1.0.0"
         CURRENT_PROJECT_VERSION: "1"
         DEVELOPMENT_TEAM: P788RWL6YN
