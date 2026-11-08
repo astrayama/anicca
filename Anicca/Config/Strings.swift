@@ -21,14 +21,24 @@ enum Strings {
         static let noAccountPrompt = "Don't have an account? Sign up"
         static let hasAccountPrompt = "Already have an account? Sign in"
         static let or = "or"
-        static let resetSent = "Password reset email sent. Check your inbox."
+        static let resetSent = "Password reset email sent. Open the link on this iPhone to choose a new password."
         static let invalidEmail = "Enter a valid email address."
         static let passwordTooShort = "Password must be at least 8 characters."
         static let passwordsDoNotMatch = "Passwords do not match."
         static let displayNameRequired = "Please enter a display name."
         static let confirmEmailSent = "Almost there. We sent a confirmation link to your email. Open it on this iPhone to finish signing in."
         static let confirmEmailFirst = "Please confirm your email first. Open the link we sent you, then sign in."
-        static let confirmLinkFailed = "We couldn't sign you in from that link. Sign in with your email and password instead."
+        /// Either kind of email link (sign-up confirmation or password reset) that couldn't sign in.
+        static let emailLinkFailed = "That email link didn't work. It may have expired or been used already. Sign in, or tap “Forgot password?” to get a new link."
+
+        // Choosing a new password after a reset link
+        static let newPasswordTitle = "Choose a new password"
+        static let newPasswordSubtitle = "Your reset link worked. Pick a new password to finish signing in."
+        static let newPassword = "New Password"
+        static let confirmNewPassword = "Confirm New Password"
+        static let saveNewPassword = "Save and Sign In"
+        static let cancelNewPassword = "Cancel"
+        static let newPasswordSameAsOld = "That's already your password. Choose a different one, or tap Cancel and sign in with it."
     }
 
     enum Onboarding {

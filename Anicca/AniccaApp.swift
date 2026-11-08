@@ -74,6 +74,13 @@ struct AniccaApp: App {
             .environmentObject(revenueCat)
             .environmentObject(router)
             .preferredColorScheme(.light)
+            // A password-reset link signed the user in: they choose a new password before anything
+            // else, whichever route is underneath (the link can arrive during the splash screen).
+            .fullScreenCover(isPresented: Binding(get: { auth.passwordResetEmail != nil }, set: { _ in })) {
+                SetNewPasswordView()
+                    .environmentObject(auth)
+                    .preferredColorScheme(.light)
+            }
             .onReceive(auth.$isAuthenticated) { authenticated in
                 if authenticated {
                     if router.route == .auth || router.route == .splash {
@@ -104,6 +111,7 @@ struct AniccaApp: App {
             }
             .modelContainer(modelContainer)
             .onOpenURL { url in
+                // Supabase email links: sign-up confirmations and password resets.
                 if url.scheme == AppConfig.authCallbackURL.scheme, url.host == AppConfig.authCallbackURL.host {
                     Task { await auth.handleAuthCallback(url) }
                 } else {

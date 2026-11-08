@@ -63,7 +63,7 @@ Claude already fixed in the `claude/project-status-app-store-a7257b` branch: bun
 
 ---
 
-## Phase 3 — Backend switch-on 🧑 ⏱ ~35 min
+## Phase 3 — Backend switch-on 🧑 ⏱ ~60 min
 
 - [ ] **3.1 Install + log in to the Supabase CLI** ⏱ 5 min
   ```bash
@@ -93,10 +93,27 @@ Claude already fixed in the `claude/project-status-app-store-a7257b` branch: bun
   **Do:** [Google Cloud console → Credentials](https://console.cloud.google.com/apis/credentials). If your iOS OAuth client's bundle ID isn't `com.screenseiji.anicca`, create a new **iOS** OAuth client with it. Put the client ID in `Secrets.xcconfig` as `GOOGLE_CLIENT_ID` and its reversed form (`com.googleusercontent.apps.…`) as `GOOGLE_URL_SCHEME`. Add the client ID to the Supabase **Google** provider's Authorized Client IDs.
   **Done when:** all three places (Google console, Secrets.xcconfig, Supabase) agree.
 
-- [ ] **3.6 Send email links back into the app** ⏱ 5 min
-  **Do:** Supabase dashboard → Authentication → **URL Configuration**. Set **Site URL** to `https://anicca.lovable.app` and add `com.screenseiji.anicca://auth-callback` under **Redirect URLs**.
-  *Why: sign-up confirmation emails link to the Site URL unless the app's own link is allowed. Left at the default, they open `localhost:3000`, which is a dead page on a phone.*
-  **Done when:** a fresh email sign-up on a device shows "check your email", and tapping the link in that email opens Anicca signed in.
+- [ ] **3.6 Send email links back into the app** ⏱ 10 min
+  **Do:** Supabase dashboard → Authentication → **URL Configuration**. Check two things (both were already right on Nov 7 2026, so this is usually a check, not a change):
+  - **Site URL** is a real web page of yours. Yours is `https://www.screenseiji.com/apps/anicca`; anything but the default `localhost:3000` is fine.
+  - **Redirect URLs** lists `com.screenseiji.anicca://auth-callback`, spelled exactly like that. Don't add variations: one entry covers both kinds of email.
+
+  Also open Authentication → **Emails** → **Reset Password** and check that the link in the template still uses `{{ .ConfirmationURL }}`, which is the default.
+  *Why: the app sends that URL with sign-up confirmations and with password resets. Supabase only follows a URL on the list, and it has to match exactly, query included. Any other URL falls back to the Site URL, a web page that can't sign anyone into the app. Until Nov 7 2026 the reset email sent no URL at all, so every reset link ended on the website.*
+  **Done when:** both of these work on your iPhone:
+  1. A fresh email sign-up shows "check your email", and the link in that email opens Anicca signed in.
+  2. On the sign-in screen, type your email and tap **Forgot password?**. Open the link in that email **on the same iPhone**. Anicca opens on **Choose a new password**; save one and you land in the app, signed in. Sign out, then sign in with the new password.
+
+  *If the reset doesn't work:*
+  - **A web page opens instead of Anicca:** the redirect URL is missing or misspelled, or the template no longer uses `{{ .ConfirmationURL }}`.
+  - **Anicca says "That email link didn't work":** the link expired, was already used, or was opened on a different device than the one that asked for it. The app keeps a one-time secret for each request, and a newer request replaces the older one, so always open the newest email on the same iPhone.
+  - **"Too many attempts":** see 3.7.
+  - **Testing on the simulator:** request the reset in the simulator, then copy the link from the email and run `xcrun simctl openurl booted "PASTE-THE-LINK"` (or open the email in the simulator's Safari). Clicking it on your Mac opens the Mac's browser, which can't reach the app.
+
+- [ ] **3.7 Send auth emails from your own address** ⏱ 20 min
+  **Do:** Supabase dashboard → Authentication → **Emails** → **SMTP Settings**. If custom SMTP is off, turn it on with a transactional email provider (Resend, Postmark, Amazon SES and others give you the host, port, user and password) and a sender like `no-reply@screenseiji.com`. The provider will ask you to add DNS records for that domain first.
+  *Why: Supabase's built-in sender is for testing only. It delivers only to addresses on your Supabase team and only about 2 emails an hour, so real users would never get their confirmation or reset emails.*
+  **Done when:** a sign-up with an email address that isn't on your Supabase team receives its confirmation email.
 
 ---
 
@@ -171,6 +188,7 @@ Claude already fixed in the `claude/project-status-app-store-a7257b` branch: bun
 
 - [ ] **6.6 The smoke test** ⏱ 20 min — on the TestFlight build, tick every one:
   - [ ] Email sign-up → onboarding → main tabs
+  - [ ] Sign out → **Forgot password?** → open the email's link on this iPhone → choose a new password → signed in; the new password works after signing out
   - [ ] Sign out → **Continue with Apple** — the Apple sheet appears exactly **once**
   - [ ] Sign out → **Continue with Google** works
   - [ ] Log tab: type a sentence → "Map my feelings" adds words → Next → save

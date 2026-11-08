@@ -96,6 +96,10 @@ targets:
       - path: Anicca/Models/PlanTier.swift
       - path: Anicca/Models/UserID.swift
       - path: Anicca/Models/UserProfile.swift
+      - path: Anicca/Models/AppError.swift
+      - path: Anicca/Models/AuthLink.swift
+      - path: Anicca/Models/PasswordRules.swift
+      - path: Anicca/ViewModels/SetNewPasswordViewModel.swift
       - path: Anicca/Services/LocalCheckInStore.swift
       - path: Anicca/Services/EmotionMatcher.swift
       - path: Anicca/Services/InsightsService.swift
