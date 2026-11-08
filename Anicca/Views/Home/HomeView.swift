@@ -87,6 +87,8 @@ struct HomeView: View {
                      locked: false,
                      accentColor: insights.dominantCenter(in: lastDays(7))?.color)
         }
+        // Equal heights, even when one title wraps (larger text sizes).
+        .fixedSize(horizontal: false, vertical: true)
     }
 
     private func statCard(title: String, value: String, locked: Bool, accentColor: Color? = nil) -> some View {
@@ -96,7 +98,7 @@ struct HomeView: View {
                     Circle().fill(accentColor).frame(width: 8, height: 8)
                 }
                 Text(title).anicca(.caption)
-                Spacer()
+                Spacer(minLength: 0) // the default 8 pt gap wrapped "Most active" onto two lines
                 if locked {
                     Image(systemName: "lock.fill")
                         .font(.system(size: 11))
@@ -108,8 +110,9 @@ struct HomeView: View {
                 .lineLimit(1)
                 .minimumScaleFactor(0.7)
         }
-        .padding(AniccaTheme.Spacing.s12)
-        .frame(maxWidth: .infinity, alignment: .leading)
+        // One layer of padding (the card's own). A second 12 pt here left about 62 pt for the
+        // value on a 6.3" iPhone, so "🔥 16 days" truncated to "🔥 16 d…".
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .aniccaCard(padding: AniccaTheme.Spacing.s12)
     }
 
