@@ -88,6 +88,7 @@ final class AuthService: NSObject, ObservableObject {
             let userId = UserID.normalized(session.user.id)
             try await createProfile(userId: userId, email: email, displayName: displayName)
             await loadProfile(userId: userId, email: email)
+            self.authProvider = .email
             self.isAuthenticated = true
             return .signedIn
         } catch {
@@ -106,6 +107,7 @@ final class AuthService: NSObject, ObservableObject {
                 email: session.user.email ?? email,
                 displayName: session.user.userMetadata["display_name"]?.stringValue
             )
+            self.authProvider = .email
             self.isAuthenticated = true
         } catch {
             throw SupabaseErrorMapper.map(error)
@@ -261,6 +263,7 @@ final class AuthService: NSObject, ObservableObject {
             try? await ensureProfileExists(userId: userId, email: email, displayName: displayName)
             await loadProfile(userId: userId, email: email)
             self.isAuthenticated = true
+            self.authProvider = .google
         } catch {
             debugLog("🔴 Google Sign-in Error: \(error)")
             throw SupabaseErrorMapper.map(error)
@@ -315,6 +318,7 @@ final class AuthService: NSObject, ObservableObject {
             try await client.auth.signOut()
             self.currentUser = nil
             self.isAuthenticated = false
+            self.authProvider = nil
         } catch {
             throw SupabaseErrorMapper.map(error)
         }
