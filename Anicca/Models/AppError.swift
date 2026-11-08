@@ -36,7 +36,8 @@ enum AppError: LocalizedError, Equatable {
 
 enum SupabaseErrorMapper {
     static func map(_ error: Error) -> AppError {
-        let raw = (error as NSError).localizedDescription.lowercased()
+        let message = (error as NSError).localizedDescription
+        let raw = message.lowercased()
         if raw.contains("network") || raw.contains("offline") || raw.contains("connection") {
             return .network
         }
@@ -51,6 +52,14 @@ enum SupabaseErrorMapper {
         }
         if raw.contains("password") && raw.contains("short") {
             return .authFailed(Strings.Auth.passwordTooShort)
+        }
+        if raw.contains("different from the old password") {
+            return .authFailed(Strings.Auth.newPasswordSameAsOld)
+        }
+        // The project's own password rules (minimum length, required characters, leaked
+        // passwords) already say what to change, so show them as Supabase words them.
+        if raw.contains("password should") || raw.contains("weak and easy to guess") {
+            return .authFailed(message)
         }
         if raw.contains("rate limit") {
             return .rateLimited

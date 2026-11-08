@@ -20,6 +20,9 @@ final class AuthService: NSObject, ObservableObject {
     @Published var isLoading: Bool = false
     @Published var errorMessage: String?
     @Published var authProvider: AuthProvider?
+    /// Set when a password-reset link has signed the user in: they choose a new password
+    /// (`SetNewPasswordView`) before entering the app. Holds the account's email ("" if none).
+    @Published private(set) var passwordResetEmail: String?
 
     private var pendingDeleteContinuation: CheckedContinuation<String, Error>?
 
@@ -105,10 +108,16 @@ final class AuthService: NSObject, ObservableObject {
         }
     }
 
-    /// Finishes sign-up when the user opens the confirmation link from their email.
+    /// Handles a link from the user's email: a sign-up confirmation signs them in, and a password
+    /// reset opens the screen to choose a new password.
     func handleAuthCallback(_ url: URL) async {
         do {
             let session = try await client.auth.session(from: url)
+            if AuthLink.isPasswordRecovery(url: url, accessToken: session.accessToken) {
+                // The link signed them in, but the app waits for the new password (`setNewPassword`).
+                self.passwordResetEmail = session.user.email ?? ""
+                return
+            }
             await loadProfile(
                 userId: UserID.normalized(session.user.id),
                 email: session.user.email ?? "",
@@ -120,17 +129,48 @@ final class AuthService: NSObject, ObservableObject {
             debugLog("🔴 AuthService.handleAuthCallback failed: \(error)")
             // Already signed in (an old link opened again): nothing to tell the user.
             if !isAuthenticated {
-                self.errorMessage = Strings.Auth.confirmLinkFailed
+                self.errorMessage = Strings.Auth.emailLinkFailed
             }
         }
     }
 
+    /// Emails a password-reset link that opens the app. Without `redirectTo`, Supabase links to
+    /// the Site URL (a web page) instead. The link only works on this device, which keeps the
+    /// PKCE code verifier for it.
     func resetPassword(email: String) async throws {
         do {
-            try await client.auth.resetPasswordForEmail(email)
+            try await client.auth.resetPasswordForEmail(email, redirectTo: AppConfig.authCallbackURL)
         } catch {
             throw SupabaseErrorMapper.map(error)
         }
+    }
+
+    /// Saves the password chosen after a reset link and finishes signing in.
+    func setNewPassword(_ password: String) async throws {
+        do {
+            let user = try await client.auth.update(user: UserAttributes(password: password))
+            await loadProfile(
+                userId: UserID.normalized(user.id),
+                email: user.email ?? passwordResetEmail ?? "",
+                displayName: user.userMetadata["display_name"]?.stringValue
+            )
+            self.authProvider = .email
+            self.passwordResetEmail = nil
+            self.isAuthenticated = true
+        } catch {
+            debugLog("🔴 AuthService.setNewPassword failed: \(error)")
+            throw SupabaseErrorMapper.map(error)
+        }
+    }
+
+    /// Leaves the new-password screen without saving. The reset link's session is signed out, so
+    /// the user is back on the sign-in screen and needs a new link to try again.
+    func cancelPasswordReset() async {
+        passwordResetEmail = nil
+        try? await client.auth.signOut()
+        currentUser = nil
+        isAuthenticated = false
+        authProvider = nil
     }
 
     // MARK: - Apple Sign In

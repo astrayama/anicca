@@ -56,7 +56,7 @@ final class AuthViewModel: ObservableObject {
             emailError = Strings.Auth.invalidEmail
             ok = false
         }
-        if password.count < 8 {
+        if password.count < PasswordRules.minimumLength {
             passwordError = Strings.Auth.passwordTooShort
             ok = false
         }

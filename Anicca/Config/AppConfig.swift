@@ -70,9 +70,11 @@ enum AppConfig {
     static let termsOfUseURL = URL(string: "https://anicca.lovable.app/terms")!
     static let yggdrasilURL = URL(string: "https://yggdrasil-journal.lovable.app/")!
 
-    /// Where Supabase email links (sign-up confirmation) send the user back into the app. The
-    /// scheme is registered in Info.plist, and this exact URL must be listed under Supabase →
-    /// Authentication → URL Configuration → Redirect URLs, or Supabase falls back to the Site URL.
+    /// Where Supabase email links (sign-up confirmation and password reset) send the user back
+    /// into the app; `AuthLink` tells the two apart. The scheme is registered in Info.plist, and
+    /// this exact URL must be listed under Supabase → Authentication → URL Configuration →
+    /// Redirect URLs, or Supabase falls back to the Site URL. Matching is exact, query included,
+    /// so don't add parameters to it.
     static let authCallbackURL = URL(string: "\(Bundle.main.bundleIdentifier ?? "com.screenseiji.anicca")://auth-callback")!
 
     // MARK: - Build Info
