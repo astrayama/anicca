@@ -41,6 +41,13 @@ struct AuthView: View {
             viewModel.generalError = message
             auth.errorMessage = nil
         }
+        // The reset page's "Open Anicca" button, right after a new password was saved there.
+        .onReceive(auth.$passwordUpdatedAt.compactMap { $0 }) { updated in
+            let rememberedEmail = auth.takePasswordUpdatedNotice()
+            guard AuthLink.isFreshPasswordUpdate(at: updated) else { return }
+            viewModel.showPasswordUpdated(email: rememberedEmail)
+            focusedField = viewModel.email.isEmpty ? .email : .password
+        }
     }
 
     private var headerBlock: some View {

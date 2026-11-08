@@ -77,6 +77,25 @@ enum AppConfig {
     /// so don't add parameters to it.
     static let authCallbackURL = URL(string: "\(Bundle.main.bundleIdentifier ?? "com.screenseiji.anicca")://auth-callback")!
 
+    /// The web page password-reset emails open (screenseiji repo: app/apps/anicca/reset-password).
+    /// There the user chooses a new password on any device, then comes back to sign in. Supabase
+    /// accepts it without a Redirect URLs entry because it's on the Site URL's host.
+    static let passwordResetPageURL: URL = {
+#if DEBUG
+        // For testing against a local copy of the site: -anicca_password_reset_url <url>
+        if let raw = UserDefaults.standard.string(forKey: "anicca_password_reset_url"), let url = URL(string: raw) {
+            return url
+        }
+#endif
+        return URL(string: "https://www.screenseiji.com/apps/anicca/reset-password")!
+    }()
+
+    /// The reset page's "Open Anicca" button: opens the sign-in screen with a "password updated" note.
+    static let passwordUpdatedURL = URL(string: "\(Bundle.main.bundleIdentifier ?? "com.screenseiji.anicca")://password-updated")!
+
+    /// The email last used for "Forgot password?", to fill in the sign-in screen afterwards.
+    static let lastResetEmailKey = "anicca_last_reset_email"
+
     // MARK: - Build Info
     static var appVersion: String {
         Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"

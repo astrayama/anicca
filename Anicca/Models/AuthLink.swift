@@ -1,8 +1,10 @@
 import Foundation
 
-/// Reads what an email link from Supabase brings back into the app. Sign-up confirmations and
-/// password resets both return through `AppConfig.authCallbackURL` (the app's one entry on the
-/// project's Redirect URLs list), so the URL alone doesn't say which kind of link it was.
+/// Reads the links that open the app. Sign-up confirmations return through
+/// `AppConfig.authCallbackURL` (the app's one entry on the project's Redirect URLs list).
+/// Password-reset emails now open the reset web page instead, but resets requested by builds
+/// before that still come back through the same URL, so the URL alone doesn't say which kind of
+/// link it was.
 enum AuthLink {
     /// True when the session made from `url` came from a password-reset email, so the user still
     /// has to choose a new password. The app uses PKCE, whose redirect carries only `?code=…`, and
@@ -28,6 +30,18 @@ enum AuthLink {
             let amr = claims["amr"] as? [[String: Any]]
         else { return [] }
         return amr.compactMap { $0["method"] as? String }
+    }
+
+    /// True for the reset page's "Open Anicca" link (`AppConfig.passwordUpdatedURL`), which isn't an
+    /// email link: the password is already changed and the user just needs to sign in.
+    static func isPasswordUpdatedNotice(_ url: URL, appURL: URL = AppConfig.passwordUpdatedURL) -> Bool {
+        url.scheme?.lowercased() == appURL.scheme?.lowercased() && url.host == appURL.host
+    }
+
+    /// The sign-in screen mentions the new password only for a while after the reset page sent
+    /// the user here, not the next time they happen to sign out.
+    static func isFreshPasswordUpdate(at updated: Date, now: Date = Date()) -> Bool {
+        now.timeIntervalSince(updated) < 10 * 60
     }
 
     /// Query and fragment parameters together: Supabase uses one or the other depending on the flow.

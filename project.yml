@@ -103,6 +103,7 @@ targets:
       - path: Anicca/Models/AppError.swift
       - path: Anicca/Models/AuthLink.swift
       - path: Anicca/Models/PasswordRules.swift
+      - path: Anicca/Models/PasswordResetRequest.swift
       - path: Anicca/ViewModels/SetNewPasswordViewModel.swift
       - path: Anicca/Services/LocalCheckInStore.swift
       - path: Anicca/Services/EmotionMatcher.swift

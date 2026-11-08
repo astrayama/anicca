@@ -111,8 +111,11 @@ struct AniccaApp: App {
             }
             .modelContainer(modelContainer)
             .onOpenURL { url in
-                // Supabase email links: sign-up confirmations and password resets.
-                if url.scheme == AppConfig.authCallbackURL.scheme, url.host == AppConfig.authCallbackURL.host {
+                if AuthLink.isPasswordUpdatedNotice(url) {
+                    // The reset page's "Open Anicca" button, after a new password was saved there.
+                    auth.passwordWasUpdated()
+                } else if url.scheme == AppConfig.authCallbackURL.scheme, url.host == AppConfig.authCallbackURL.host {
+                    // Supabase email links: sign-up confirmations (and resets from older builds).
                     Task { await auth.handleAuthCallback(url) }
                 } else {
                     GIDSignIn.sharedInstance.handle(url)

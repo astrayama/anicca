@@ -21,7 +21,10 @@ enum Strings {
         static let noAccountPrompt = "Don't have an account? Sign up"
         static let hasAccountPrompt = "Already have an account? Sign in"
         static let or = "or"
-        static let resetSent = "Password reset email sent. Open the link on this iPhone to choose a new password."
+        static let resetSent = "Check your email for a link to choose a new password. It works on any device. Then come back here and sign in."
+        static let resetTooSoon = "We just sent you a reset email. Check your inbox and spam folder, or try again in a minute."
+        /// Shown on the sign-in screen when the reset page sends the user back to the app.
+        static let passwordUpdated = "Your password is updated. Sign in with your new password."
         static let invalidEmail = "Enter a valid email address."
         static let passwordTooShort = "Password must be at least 8 characters."
         static let passwordsDoNotMatch = "Passwords do not match."

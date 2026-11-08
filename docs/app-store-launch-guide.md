@@ -93,22 +93,22 @@ Claude already fixed in the `claude/project-status-app-store-a7257b` branch: bun
   **Do:** [Google Cloud console → Credentials](https://console.cloud.google.com/apis/credentials). If your iOS OAuth client's bundle ID isn't `com.screenseiji.anicca`, create a new **iOS** OAuth client with it. Put the client ID in `Secrets.xcconfig` as `GOOGLE_CLIENT_ID` and its reversed form (`com.googleusercontent.apps.…`) as `GOOGLE_URL_SCHEME`. Add the client ID to the Supabase **Google** provider's Authorized Client IDs.
   **Done when:** all three places (Google console, Secrets.xcconfig, Supabase) agree.
 
-- [ ] **3.6 Send email links back into the app** ⏱ 10 min
+- [ ] **3.6 Check where email links go** ⏱ 10 min
   **Do:** Supabase dashboard → Authentication → **URL Configuration**. Check two things (both were already right on Nov 7 2026, so this is usually a check, not a change):
-  - **Site URL** is a real web page of yours. Yours is `https://www.screenseiji.com/apps/anicca`; anything but the default `localhost:3000` is fine.
-  - **Redirect URLs** lists `com.screenseiji.anicca://auth-callback`, spelled exactly like that. Don't add variations: one entry covers both kinds of email.
+  - **Site URL** is `https://www.screenseiji.com/apps/anicca`.
+  - **Redirect URLs** lists `com.screenseiji.anicca://auth-callback`, spelled exactly like that. Optional but sturdier: also add `https://www.screenseiji.com/apps/anicca/reset-password`.
 
   Also open Authentication → **Emails** → **Reset Password** and check that the link in the template still uses `{{ .ConfirmationURL }}`, which is the default.
-  *Why: the app sends that URL with sign-up confirmations and with password resets. Supabase only follows a URL on the list, and it has to match exactly, query included. Any other URL falls back to the Site URL, a web page that can't sign anyone into the app. Until Nov 7 2026 the reset email sent no URL at all, so every reset link ended on the website.*
+  *Why: sign-up confirmations open the app through `auth-callback`. Password resets open the reset page on screenseiji.com (`app/apps/anicca/reset-password` in the screenseiji repo), where the user picks a new password on any device and then signs in to the app with it. Supabase accepts the reset page without a Redirect URLs entry because it's on the Site URL's host; listing it keeps that true if the Site URL ever moves. A reset link that still falls back to the Site URL (for example one sent with "Send password recovery" in the dashboard) is forwarded from the Anicca page to the reset page.*
   **Done when:** both of these work on your iPhone:
   1. A fresh email sign-up shows "check your email", and the link in that email opens Anicca signed in.
-  2. On the sign-in screen, type your email and tap **Forgot password?**. Open the link in that email **on the same iPhone**. Anicca opens on **Choose a new password**; save one and you land in the app, signed in. Sign out, then sign in with the new password.
+  2. On the sign-in screen, type your email and tap **Forgot password?**. Open the newest email's link (on the iPhone or any computer). The reset page shows **Choose a new password** for your email; save one. On the iPhone, tap **Open Anicca**: the sign-in screen says your password is updated, with your email filled in. Sign in with the new password.
 
   *If the reset doesn't work:*
-  - **A web page opens instead of Anicca:** the redirect URL is missing or misspelled, or the template no longer uses `{{ .ConfirmationURL }}`.
-  - **Anicca says "That email link didn't work":** the link expired, was already used, or was opened on a different device than the one that asked for it. The app keeps a one-time secret for each request, and a newer request replaces the older one, so always open the newest email on the same iPhone.
-  - **"Too many attempts":** see 3.7.
-  - **Testing on the simulator:** request the reset in the simulator, then copy the link from the email and run `xcrun simctl openurl booted "PASTE-THE-LINK"` (or open the email in the simulator's Safari). Clicking it on your Mac opens the Mac's browser, which can't reach the app.
+  - **The Anicca page opens instead of the reset page:** the app build is older than this flow (rebuild from main), or the link was sent before Nov 8 2026. Request a new email.
+  - **"This link has expired":** reset links work once, for an hour, and a newer email replaces older ones. Request a new one and use the newest email.
+  - **"Too many attempts" or "We just sent you a reset email":** Supabase allows one reset email a minute per address; see 3.7 for the hourly limit.
+  - **Testing against a local Supabase:** see "Testing password reset locally" in `Anicca/Resources/SupabaseSetup.md`.
 
 - [ ] **3.7 Send auth emails from your own address** ⏱ 20 min
   **Do:** Supabase dashboard → Authentication → **Emails** → **SMTP Settings**. If custom SMTP is off, turn it on with a transactional email provider (Resend, Postmark, Amazon SES and others give you the host, port, user and password) and a sender like `no-reply@screenseiji.com`. The provider will ask you to add DNS records for that domain first.
@@ -188,7 +188,7 @@ Claude already fixed in the `claude/project-status-app-store-a7257b` branch: bun
 
 - [ ] **6.6 The smoke test** ⏱ 20 min — on the TestFlight build, tick every one:
   - [ ] Email sign-up → onboarding → main tabs
-  - [ ] Sign out → **Forgot password?** → open the email's link on this iPhone → choose a new password → signed in; the new password works after signing out
+  - [ ] Sign out → **Forgot password?** → open the email's link → choose a new password on the reset page → **Open Anicca** → sign in with the new password
   - [ ] Sign out → **Continue with Apple** — the Apple sheet appears exactly **once**
   - [ ] Sign out → **Continue with Google** works
   - [ ] Log tab: type a sentence → "Map my feelings" adds words → Next → save
