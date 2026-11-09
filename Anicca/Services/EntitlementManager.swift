@@ -11,17 +11,29 @@ final class EntitlementManager: ObservableObject {
 
     @Published private var _planTier: PlanTier = .free
     private var cancellable: AnyCancellable?
+#if DEBUG
+    private var authCancellable: AnyCancellable?
+#endif
 
     private init(revenueCat: RevenueCatService = .shared) {
         _planTier = revenueCat.planTier
         cancellable = revenueCat.$planTier
             .removeDuplicates()
             .sink { [weak self] tier in self?._planTier = tier }
+#if DEBUG
+        authCancellable = AuthService.shared.$currentUser
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in self?.objectWillChange.send() }
+#endif
     }
 
     var planTier: PlanTier {
 #if DEBUG
         if UserDefaults.standard.bool(forKey: "developer_override_pro") {
+            return .pro
+        }
+        if let email = AuthService.shared.currentUser?.email.lowercased(),
+           AppConfig.debugProEmails.contains(email) {
             return .pro
         }
 #endif

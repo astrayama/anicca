@@ -60,6 +60,13 @@ enum AppConfig {
     /// The Pro + Yggdrasil Bundle is hidden for v1 (Isa, Nov 7 2026): the Yggdrasil integration
     /// it advertises isn't built. A `bundle` entitlement still unlocks everything in Pro.
     static let bundleOnSale = false
+
+#if DEBUG
+    /// Developer accounts granted Pro automatically in Debug builds.
+    static let debugProEmails: Set<String> = [
+        "isabelabonitalla@gmail.com"
+    ]
+#endif
     static let onboardingCompleteKey = "anicca_onboarding_complete"
     static let lastReviewVersionKey = "anicca_last_review_version"
     static let checkInUserIDsLowercasedKey = "anicca_checkin_user_ids_lowercased"

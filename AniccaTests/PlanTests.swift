@@ -145,4 +145,29 @@ final class PlanTests: XCTestCase {
     func testTemplatePlaceholderIsNotAKey() {
         XCTAssertNil(RevenueCatKey.select(testKey: "", appleKey: "YOUR_REVENUECAT_PUBLIC_API_KEY", isDebugBuild: true))
     }
+
+    // MARK: - Debug Pro Account
+
+#if DEBUG
+    func testDebugProEmailsContainsDeveloperAccount() {
+        XCTAssertTrue(AppConfig.debugProEmails.contains("isabelabonitalla@gmail.com"))
+    }
+
+    func testUserProfileForDebugProEmailIsProInDebug() {
+        let profile = UserProfile(id: UUID().uuidString, email: "isabelabonitalla@gmail.com")
+        XCTAssertEqual(profile.planTier, .pro)
+        XCTAssertTrue(profile.planTier.isPaid)
+    }
+
+    func testUserProfileForRegularEmailIsNotProByDefault() {
+        let previous = UserDefaults.standard.bool(forKey: "developer_override_pro")
+        UserDefaults.standard.removeObject(forKey: "developer_override_pro")
+        defer {
+            if previous { UserDefaults.standard.set(true, forKey: "developer_override_pro") }
+        }
+        let profile = UserProfile(id: UUID().uuidString, email: "regular_user@example.com")
+        XCTAssertEqual(profile.planTier, .free)
+        XCTAssertFalse(profile.planTier.isPaid)
+    }
+#endif
 }

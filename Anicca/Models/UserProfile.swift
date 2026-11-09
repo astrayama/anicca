@@ -42,7 +42,8 @@ final class UserProfile {
     var planTier: PlanTier {
         get {
 #if DEBUG
-            if UserDefaults.standard.bool(forKey: "developer_override_pro") {
+            if UserDefaults.standard.bool(forKey: "developer_override_pro") ||
+               AppConfig.debugProEmails.contains(email.lowercased()) {
                 return .pro
             }
 #endif
