@@ -161,11 +161,11 @@ Claude already fixed in the `claude/project-status-app-store-a7257b` branch: bun
 ## Phase 5 — Legal pages 🧑 ⏱ ~30 min
 
 - [ ] **5.1 Audit the privacy policy** ⏱ 15 min
-  **Do:** Open https://anicca.lovable.app/privacy and check it clearly states: what's collected (email, name, journal text, emotion logs) · storage on Supabase · that emotion mapping and reflections happen on the device (no AI or third-party text processing — if the page still mentions Gemini, remove that) · that the account can be deleted in-app and what deletion removes · a contact email. Fix the page if anything's missing — the Lovable host itself is fine; Apple checks content, not domains.
+  **Do:** Open https://www.screenseiji.com/apps/anicca/privacy and check it clearly states: what's collected (email, name, journal text, emotion logs) · storage on Supabase · that emotion mapping and reflections happen on the device (no AI or third-party text processing — if the page still mentions Gemini, remove that) · that the account can be deleted in-app and what deletion removes · a contact email. Fix the page if anything's missing — the host itself is fine; Apple checks content, not domains.
   **Done when:** every item above is on the page.
 
 - [ ] **5.2 Audit the terms** ⏱ 10 min
-  **Do:** https://anicca.lovable.app/terms must cover the auto-renewing subscriptions (renewal + cancellation), a "not medical advice / not a substitute for professional care" disclaimer, and contact info.
+  **Do:** https://www.screenseiji.com/apps/anicca/terms must cover the auto-renewing subscriptions (renewal + cancellation), a "not medical advice / not a substitute for professional care" disclaimer, and contact info.
   **Done when:** all three are on the page.
 
 - [ ] **5.3 If either URL changed, update the app** ⏱ 2 min

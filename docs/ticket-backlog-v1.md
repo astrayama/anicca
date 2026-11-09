@@ -1102,7 +1102,7 @@ SVC-07 (ExportService), SVC-05 (EntitlementManager for Pro gate).
 ### 🔧 LEGAL-01 — Host privacy policy page
 
 **Problem**
-`AppConfig.privacyPolicyURL` points to `https://anicca.lovable.app/privacy`, which is a placeholder (a Lovable-hosted prototype URL). The App Store requires a valid, accessible privacy policy URL in the app metadata and linked from within the app.
+`AppConfig.privacyPolicyURL` points to `https://www.screenseiji.com/apps/anicca/privacy`. The App Store requires a valid, accessible privacy policy URL in the app metadata and linked from within the app.
 
 **Feature description**
 A hosted privacy policy for Anicca is accessible at a stable URL and linked correctly from Settings.
@@ -1133,7 +1133,7 @@ This is a launch blocker. App Store submission requires a privacy policy URL. Th
 ### 🔧 LEGAL-02 — Host terms of use page
 
 **Problem**
-`AppConfig.termsOfUseURL` points to `https://anicca.lovable.app/terms`, a placeholder. While terms of use are not strictly required by the App Store (unlike privacy policy), subscription apps benefit from them for subscription terms, refund policy, and disclaimer of medical advice.
+`AppConfig.termsOfUseURL` points to `https://www.screenseiji.com/apps/anicca/terms`. While terms of use are not strictly required by the App Store (unlike privacy policy), subscription apps benefit from them for subscription terms, refund policy, and disclaimer of medical advice.
 
 **Feature description**
 A hosted terms of use page is accessible at a stable URL and linked from Settings.

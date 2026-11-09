@@ -73,8 +73,8 @@ enum AppConfig {
     static let reminderNotificationID = "anicca.daily.reminder"
 
     // MARK: - URLs
-    static let privacyPolicyURL = URL(string: "https://anicca.lovable.app/privacy")!
-    static let termsOfUseURL = URL(string: "https://anicca.lovable.app/terms")!
+    static let privacyPolicyURL = URL(string: "https://www.screenseiji.com/apps/anicca/privacy")!
+    static let termsOfUseURL = URL(string: "https://www.screenseiji.com/apps/anicca/terms")!
     static let yggdrasilURL = URL(string: "https://yggdrasil-journal.lovable.app/")!
 
     /// Where Supabase email links (sign-up confirmation and password reset) send the user back
