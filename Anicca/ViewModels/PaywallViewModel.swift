@@ -22,6 +22,13 @@ final class PaywallViewModel: ObservableObject {
     @Published var packages: [Package] = []
 
     private let revenueCat = RevenueCatService.shared
+    private let analytics = AnalyticsService.shared
+    let source: PaywallSource
+    private var didTrackView = false
+
+    init(source: PaywallSource) {
+        self.source = source
+    }
 
     private func package(_ productID: String) -> Package? {
         packages.first { $0.storeProduct.productIdentifier == productID }
@@ -91,6 +98,23 @@ final class PaywallViewModel: ObservableObject {
         }
     }
 
+    // MARK: - Analytics
+
+    /// Once per paywall, after the first load, so the event says whether plans could be shown.
+    func trackViewedOnce() {
+        guard !didTrackView else { return }
+        didTrackView = true
+        analytics.track(.paywallViewed(source: source, plansLoaded: offeringsAvailable))
+    }
+
+    private func purchaseContext(_ plan: SelectedPlan) -> PurchaseContext {
+        PurchaseContext(
+            plan: plan == .pro ? .pro : .bundle,
+            interval: selectedInterval == .monthly ? .monthly : .annual,
+            source: source
+        )
+    }
+
     // MARK: - Purchase
 
     func buy(_ plan: SelectedPlan) async {
@@ -101,22 +125,29 @@ final class PaywallViewModel: ObservableObject {
         case (.bundle, .monthly): package = bundleMonthlyPackage
         case (.bundle, .annual): package = bundleAnnualPackage
         }
+        let context = purchaseContext(plan)
         guard let package else {
+            analytics.track(.purchaseFailed(context, reason: .plansUnavailable))
             errorMessage = Strings.Paywall.purchaseFailed
             return
         }
         isWorking = true
         defer { isWorking = false }
         errorMessage = nil
+        analytics.track(.purchaseStarted(context))
         do {
             // The new tier reaches every screen through RevenueCatService → EntitlementManager.
             _ = try await revenueCat.purchase(package: package)
+            analytics.track(.purchaseCompleted(context))
             purchaseCompleted = true
         } catch AppError.purchaseCancelled {
             // Backing out of Apple's sheet isn't an error; leave the paywall as it was.
+            analytics.track(.purchaseCancelled(context))
         } catch let error as AppError {
+            analytics.track(.purchaseFailed(context, reason: error == .network ? .network : .store))
             errorMessage = error.errorDescription
         } catch {
+            analytics.track(.purchaseFailed(context, reason: .other))
             errorMessage = Strings.Paywall.purchaseFailed
         }
     }
@@ -127,10 +158,14 @@ final class PaywallViewModel: ObservableObject {
         errorMessage = nil
         do {
             _ = try await revenueCat.restorePurchases()
+            analytics.track(.purchasesRestored(result: .restored, source: source))
             purchaseCompleted = true
         } catch let error as AppError {
+            let result: RestoreResult = error == .nothingToRestore ? .nothingToRestore : .failed
+            analytics.track(.purchasesRestored(result: result, source: source))
             errorMessage = error.errorDescription
         } catch {
+            analytics.track(.purchasesRestored(result: .failed, source: source))
             errorMessage = Strings.Paywall.purchaseFailed
         }
     }

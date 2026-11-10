@@ -4,7 +4,7 @@ struct InsightsView: View {
     @EnvironmentObject private var auth: AuthService
     @EnvironmentObject private var entitlements: EntitlementManager
     @StateObject private var viewModel = InsightsViewModel()
-    @State private var showPaywall = false
+    @State private var paywallSource: PaywallSource?
     @State private var checkInToDelete: CheckIn?
     @State private var showDeleteAlert = false
 
@@ -30,8 +30,8 @@ struct InsightsView: View {
         .task {
             await viewModel.load()
         }
-        .sheet(isPresented: $showPaywall) {
-            PaywallView()
+        .sheet(item: $paywallSource) { source in
+            PaywallView(source: source)
         }
         .alert("Delete this check-in?", isPresented: $showDeleteAlert) {
             Button("Delete", role: .destructive) {
@@ -66,7 +66,7 @@ struct InsightsView: View {
                     if entitlements.planTier.allowsTimeline(days: range.days) {
                         viewModel.timeRange = range
                     } else {
-                        showPaywall = true
+                        paywallSource = .insightsRange
                     }
                 }
             )) {
@@ -162,7 +162,7 @@ struct InsightsView: View {
                     Color.white.opacity(0.4)
                     VStack(spacing: AniccaTheme.Spacing.s8) {
                         Text("Unlock Weekly Summary").anicca(.headline)
-                        Button("Get Pro →") { showPaywall = true }
+                        Button("Get Pro →") { paywallSource = .insightsSummary }
                             .buttonStyle(SecondaryButtonStyle())
                     }
                     .padding(AniccaTheme.Spacing.s12)
@@ -237,7 +237,7 @@ struct InsightsView: View {
                         Text("Gentle reflections about your weekly patterns will appear here.")
                             .anicca(.body)
                             .blur(radius: 4)
-                        Button(Strings.Insights.reflectionUnlock) { showPaywall = true }
+                        Button(Strings.Insights.reflectionUnlock) { paywallSource = .insightsReflection }
                             .buttonStyle(SecondaryButtonStyle())
                     }
                 } else if let reflection = viewModel.weeklyReflection {
@@ -264,6 +264,14 @@ struct InsightsView: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .aniccaCard()
+        .onFirstVisible {
+            AnalyticsService.shared.track(.weeklyReflectionViewed(state: reflectionState))
+        }
+    }
+
+    private var reflectionState: ReflectionState {
+        if !entitlements.isPro { return .locked }
+        return viewModel.weeklyReflection == nil ? .empty : .shown
     }
 
     private var recentCheckInsCard: some View {

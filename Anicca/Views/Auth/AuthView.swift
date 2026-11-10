@@ -4,7 +4,9 @@ import AuthenticationServices
 struct AuthView: View {
     @EnvironmentObject private var auth: AuthService
     @StateObject private var viewModel = AuthViewModel()
+    @ObservedObject private var analytics = AnalyticsService.shared
     @FocusState private var focusedField: Field?
+    @State private var safariURL: URL?
 
     private enum Field {
         case email, password, confirmPassword, displayName
@@ -35,6 +37,9 @@ struct AuthView: View {
             }
         }
         .scrollDismissesKeyboard(.interactively)
+        .sheet(item: $safariURL) { url in
+            SafariView(url: url)
+        }
         // Errors from outside the form, such as an email confirmation link that couldn't sign in.
         .onReceive(auth.$errorMessage.compactMap { $0 }) { message in
             viewModel.infoMessage = nil
@@ -71,6 +76,7 @@ struct AuthView: View {
         VStack(spacing: AniccaTheme.Spacing.s16) {
             appleButton
             googleButton
+            usageNote
             HStack {
                 Rectangle().fill(AniccaTheme.textMuted.opacity(0.3)).frame(height: 1)
                 Text(Strings.Auth.or)
@@ -152,6 +158,29 @@ struct AuthView: View {
             .buttonStyle(GhostButtonStyle())
         }
         .aniccaCard()
+    }
+
+    /// Anonymous usage data is on by default. This note, right under the sign-in buttons, is how
+    /// people find out, so sharing only starts once it has appeared (`AnalyticsService.noticeShown`).
+    private var usageNote: some View {
+        Text(usageNoteText)
+            .anicca(.caption)
+            .multilineTextAlignment(.center)
+            .tint(AniccaTheme.brandPrimary)
+            .frame(maxWidth: .infinity)
+            // The policy opens in the in-app browser, like everywhere else in the app.
+            .environment(\.openURL, OpenURLAction { url in
+                safariURL = url
+                return .handled
+            })
+            .onAppear { analytics.noticeShown() }
+    }
+
+    /// The note, ending in a Privacy Policy link.
+    private var usageNoteText: AttributedString {
+        var link = AttributedString(Strings.UsageData.privacyPolicy)
+        link.link = AppConfig.privacyPolicyURL
+        return AttributedString(Strings.UsageData.signInNote + " ") + link
     }
 
     private var appleButton: some View {

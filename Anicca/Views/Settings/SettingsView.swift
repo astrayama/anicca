@@ -5,9 +5,10 @@ struct SettingsView: View {
     @EnvironmentObject private var auth: AuthService
     @EnvironmentObject private var entitlements: EntitlementManager
     @StateObject private var viewModel = SettingsViewModel()
+    @ObservedObject private var analytics = AnalyticsService.shared
     @State private var safariURL: URL?
     @State private var shareItems: [Any]?
-    @State private var showPaywall = false
+    @State private var paywallSource: PaywallSource?
     @State private var isEditingName = false
     @State private var developerTapCount = 0
     @FocusState private var nameFieldFocused: Bool
@@ -21,6 +22,7 @@ struct SettingsView: View {
                     subscriptionSection
                     remindersSection
                     dataSection
+                    privacySection
                     integrationsSection
                     aboutSection
                     signOutButton
@@ -45,8 +47,8 @@ struct SettingsView: View {
         ) { wrapper in
             ShareSheet(items: wrapper.items)
         }
-        .sheet(isPresented: $showPaywall) {
-            PaywallView()
+        .sheet(item: $paywallSource) { source in
+            PaywallView(source: source)
         }
         .alert("Are you sure?", isPresented: $viewModel.showFirstDeleteAlert) {
             Button("Continue", role: .destructive) {
@@ -168,7 +170,7 @@ struct SettingsView: View {
                     Text(Strings.Settings.upgradeToPro).anicca(.headline)
                     Text("Unlock weekly reflections, full timeline history, and unlimited check-ins.")
                         .anicca(.body)
-                    Button("See Plans →") { showPaywall = true }
+                    Button("See Plans →") { paywallSource = .settingsUpgrade }
                         .buttonStyle(PrimaryButtonStyle())
                 }
                 .padding(AniccaTheme.Spacing.s16)
@@ -234,13 +236,29 @@ struct SettingsView: View {
                 if entitlements.isPro {
                     exportPDF()
                 } else {
-                    showPaywall = true
+                    paywallSource = .settingsPDF
                 }
             } label: {
                 rowLabel(title: Strings.Settings.exportPDF, icon: "doc.fill", locked: !entitlements.isPro)
             }
             .buttonStyle(.plain)
             Text("You have \(viewModel.totalCheckIns) check-ins logged").anicca(.caption)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .aniccaCard()
+    }
+
+    /// "Share anonymous usage data": on by default once the sign-in note has been shown.
+    private var privacySection: some View {
+        VStack(alignment: .leading, spacing: AniccaTheme.Spacing.s12) {
+            sectionTitle(Strings.UsageData.settingsTitle)
+            Toggle(Strings.UsageData.toggle, isOn: Binding(
+                get: { analytics.isSharing },
+                set: { analytics.setSharing($0) }
+            ))
+            .tint(AniccaTheme.brandPrimary)
+            Text(Strings.UsageData.toggleCaption)
+                .anicca(.caption)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .aniccaCard()
@@ -368,6 +386,7 @@ struct SettingsView: View {
         do {
             let url = try ExportService.shared.exportJSON(checkIns: checkIns)
             shareItems = [url]
+            AnalyticsService.shared.track(.exportCreated(format: .json, checkInCount: checkIns.count))
         } catch let error as AppError {
             viewModel.errorMessage = error.errorDescription
         } catch {
@@ -381,6 +400,7 @@ struct SettingsView: View {
         do {
             let url = try ExportService.shared.exportPDF(checkIns: checkIns, profile: user)
             shareItems = [url]
+            AnalyticsService.shared.track(.exportCreated(format: .pdf, checkInCount: checkIns.count))
         } catch let error as AppError {
             viewModel.errorMessage = error.errorDescription
         } catch {

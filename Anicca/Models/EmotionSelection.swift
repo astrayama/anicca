@@ -1,9 +1,31 @@
 import Foundation
 
+/// Where a picked word came from. Only used to tell analytics how a check-in was made (typed,
+/// browsed, from recents, or a mix); the word itself is never sent.
+enum EmotionSource: Sendable {
+    /// Tapped from the suggestions for what was typed.
+    case typed
+    /// Added by "Map my feelings".
+    case mapped
+    /// Picked from an energy zone.
+    case browse
+    /// Picked from the recent words.
+    case recent
+
+    var inputMethod: CheckInInputMethod {
+        switch self {
+        case .typed, .mapped: return .typed
+        case .browse: return .browse
+        case .recent: return .recent
+        }
+    }
+}
+
 /// A word the user picked for this check-in, with how strongly they feel it (1–5).
 struct SelectedEmotion: Identifiable, Equatable, Sendable {
     let emotion: Emotion
     var intensity: Int
+    var source: EmotionSource = .browse
 
     var id: String { emotion.id }
 }
@@ -30,21 +52,33 @@ struct EmotionSelection: Equatable, Sendable {
         items.filter { $0.emotion.zone == zone }.count
     }
 
+    /// How the words were picked: the one source they share, or `mixed`.
+    var inputMethod: CheckInInputMethod {
+        let methods = Set(items.map(\.source.inputMethod))
+        guard methods.count == 1, let only = methods.first else { return .mixed }
+        return only
+    }
+
+    /// Whether "Map my feelings" added any of the words.
+    var usedMapMyFeelings: Bool {
+        items.contains { $0.source == .mapped }
+    }
+
     /// Adds the word if it's new, removes it if it's already picked.
-    mutating func toggle(_ emotion: Emotion, intensity: Int = defaultIntensity) {
+    mutating func toggle(_ emotion: Emotion, intensity: Int = defaultIntensity, source: EmotionSource = .browse) {
         if contains(emotion) {
             remove(emotion)
         } else {
-            add(emotion, intensity: intensity)
+            add(emotion, intensity: intensity, source: source)
         }
     }
 
     /// Adds the word at the end. Returns false, and keeps the intensity the user already chose,
     /// if the word is already picked.
     @discardableResult
-    mutating func add(_ emotion: Emotion, intensity: Int = defaultIntensity) -> Bool {
+    mutating func add(_ emotion: Emotion, intensity: Int = defaultIntensity, source: EmotionSource = .browse) -> Bool {
         guard !contains(emotion) else { return false }
-        items.append(SelectedEmotion(emotion: emotion, intensity: Self.clamped(intensity)))
+        items.append(SelectedEmotion(emotion: emotion, intensity: Self.clamped(intensity), source: source))
         return true
     }
 

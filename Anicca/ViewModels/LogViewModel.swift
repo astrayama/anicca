@@ -49,6 +49,7 @@ final class LogViewModel: ObservableObject {
     private let insightsService = InsightsService()
     private let auth = AuthService.shared
     private let entitlements = EntitlementManager.shared
+    private let analytics = AnalyticsService.shared
     private var entitlementChange: AnyCancellable?
 
     init() {
@@ -96,8 +97,9 @@ final class LogViewModel: ObservableObject {
         selection.contains(emotion)
     }
 
-    func toggle(_ emotion: Emotion) {
-        selection.toggle(emotion)
+    /// A word picked from an energy zone (`.browse`) or the recent words (`.recent`).
+    func toggle(_ emotion: Emotion, source: EmotionSource) {
+        selection.toggle(emotion, source: source)
     }
 
     /// Tapping a word suggested from typed text keeps the strength the wording implied
@@ -108,7 +110,7 @@ final class LogViewModel: ObservableObject {
             return
         }
         let guess = EmotionMatcher.match(query).first { $0.emotion == emotion }?.intensity
-        selection.add(emotion, intensity: guess ?? EmotionSelection.defaultIntensity)
+        selection.add(emotion, intensity: guess ?? EmotionSelection.defaultIntensity, source: .typed)
     }
 
     func remove(_ emotion: Emotion) {
@@ -129,10 +131,12 @@ final class LogViewModel: ObservableObject {
         let mapped = EmotionMatcher.match(query)
         guard !mapped.isEmpty else {
             mapFeedback = .noMatch
+            analytics.track(.mapMyFeelingsUsed(result: .noMatch, addedCount: 0))
             return
         }
-        let added = mapped.filter { selection.add($0.emotion, intensity: $0.intensity) }.map(\.emotion.name)
+        let added = mapped.filter { selection.add($0.emotion, intensity: $0.intensity, source: .mapped) }.map(\.emotion.name)
         mapFeedback = added.isEmpty ? .alreadySelected : .added(added)
+        analytics.track(.mapMyFeelingsUsed(result: added.isEmpty ? .alreadySelected : .added, addedCount: added.count))
     }
 
     // MARK: - Navigation
@@ -200,12 +204,19 @@ final class LogViewModel: ObservableObject {
         }
         refreshMonthCount()
         if entitlements.planTier.hasReachedMonthlyLimit(checkInsThisMonth: monthCount) {
+            analytics.track(.freeLimitReached(limit: AppConfig.freeMonthlyCheckInLimit))
             showPaywall = true
             return
         }
         guard canSave else { return }
         isSaving = true
         defer { isSaving = false }
+
+        // Read before saving: a successful save clears the selection and the note.
+        let inputMethod = selection.inputMethod
+        let usedMapMyFeelings = selection.usedMapMyFeelings
+        let emotionCount = selection.count
+        let hasNote = !note.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
 
         do {
             let saved = try await checkInService.saveCheckIn(
@@ -224,6 +235,14 @@ final class LogViewModel: ObservableObject {
             )
             savedStreak = streak
             refreshMonthCount()
+            analytics.track(.checkInCreated(
+                inputMethod: inputMethod,
+                usedMapMyFeelings: usedMapMyFeelings,
+                emotionCount: emotionCount,
+                hasNote: hasNote,
+                checkInsThisMonth: monthCount,
+                isFirstCheckIn: allCheckIns.count == 1
+            ))
             reset()
             refreshRecents()
             showToast()

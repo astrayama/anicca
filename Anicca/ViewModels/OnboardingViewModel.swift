@@ -9,6 +9,7 @@ final class OnboardingViewModel: ObservableObject {
     @Published var errorMessage: String?
 
     let totalSteps: Int = 4
+    private var skippedIntro = false
 
     private static func defaultReminderTime() -> Date {
         let calendar = Calendar.current
@@ -35,6 +36,7 @@ final class OnboardingViewModel: ObservableObject {
     }
 
     func skipToEnd() {
+        skippedIntro = true
         withAnimation(AniccaTheme.springAnimation) { step = totalSteps - 1 }
     }
 
@@ -45,13 +47,17 @@ final class OnboardingViewModel: ObservableObject {
         if granted {
             NotificationService.shared.scheduleDailyReminder(at: reminderTime)
             await AuthService.shared.updateReminderSettings(enabled: true, time: reminderTime)
+            AnalyticsService.shared.track(.reminderEnabled(source: .onboarding))
         } else {
             await AuthService.shared.updateReminderSettings(enabled: false, time: nil)
+            AnalyticsService.shared.track(.reminderPermissionDenied(source: .onboarding))
         }
         UserDefaults.standard.set(true, forKey: AppConfig.onboardingCompleteKey)
+        AnalyticsService.shared.track(.onboardingCompleted(remindersEnabled: granted, skippedIntro: skippedIntro))
     }
 
     func completeWithoutReminders() async {
         UserDefaults.standard.set(true, forKey: AppConfig.onboardingCompleteKey)
+        AnalyticsService.shared.track(.onboardingCompleted(remindersEnabled: false, skippedIntro: skippedIntro))
     }
 }

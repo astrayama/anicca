@@ -32,7 +32,7 @@ struct HomeView: View {
         .task { await refresh() }
         // A fresh upgrade (or a lapse) changes what the suggestion card shows.
         .onChange(of: entitlements.isPro) { _, _ in loadSuggestions() }
-        .sheet(isPresented: $showPaywall) { PaywallView() }
+        .sheet(isPresented: $showPaywall) { PaywallView(source: .homeSuggestion) }
     }
 
     private var firstName: String {

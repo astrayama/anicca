@@ -32,7 +32,7 @@ struct LogView: View {
             viewModel.refreshRecents()
         }
         .sheet(isPresented: $viewModel.showPaywall) {
-            PaywallView()
+            PaywallView(source: .logLimit)
         }
         .alert("Something went wrong", isPresented: errorBinding) {
             Button("OK", role: .cancel) { viewModel.errorMessage = nil }

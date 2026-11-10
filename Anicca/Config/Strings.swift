@@ -176,6 +176,15 @@ enum Strings {
         static let signOut = "Sign Out"
     }
 
+    /// Anonymous usage data: on by default, explained on the sign-in screen, switchable in Settings.
+    enum UsageData {
+        static let signInNote = "Anicca shares anonymous usage counts, like “check-in saved,” to improve the app. Never what you write. You can turn this off in Settings."
+        static let settingsTitle = "Privacy"
+        static let toggle = "Share anonymous usage data"
+        static let toggleCaption = "Counts like “check-in saved” help improve Anicca. Never what you write, and never linked to your account."
+        static let privacyPolicy = "Privacy Policy"
+    }
+
     enum Paywall {
         static let headline = "Unlock Your Full Pattern"
         static let subheadline = "Get weekly reflections, unlimited check-ins, and deeper self-awareness."

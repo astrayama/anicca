@@ -2,10 +2,15 @@ import SwiftUI
 import SafariServices
 
 struct PaywallView: View {
-    @StateObject private var viewModel = PaywallViewModel()
+    @StateObject private var viewModel: PaywallViewModel
     @EnvironmentObject private var entitlements: EntitlementManager
     @Environment(\.dismiss) private var dismiss
     @State private var safariURL: URL?
+
+    /// - Parameter source: where the paywall was opened from, for analytics.
+    init(source: PaywallSource) {
+        _viewModel = StateObject(wrappedValue: PaywallViewModel(source: source))
+    }
 
     var body: some View {
         ZStack {
@@ -35,6 +40,7 @@ struct PaywallView: View {
         }
         .task {
             await viewModel.load()
+            viewModel.trackViewedOnce()
         }
         .onChange(of: viewModel.purchaseCompleted) { _, completed in
             if completed { dismiss() }

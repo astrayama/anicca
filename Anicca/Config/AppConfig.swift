@@ -37,6 +37,25 @@ enum AppConfig {
         )
     }()
 
+    /// The PostHog project key for this build, or nil to run with analytics off (see `PostHogKey`).
+    static let posthogAPIKey: String? = {
+        let info = Bundle.main.infoDictionary
+#if DEBUG
+        let isDebugBuild = true
+#else
+        let isDebugBuild = false
+#endif
+        return PostHogKey.select(
+            debugKey: info?["POSTHOG_DEBUG_API_KEY"] as? String ?? "",
+            releaseKey: info?["POSTHOG_API_KEY"] as? String ?? "",
+            isDebugBuild: isDebugBuild
+        )
+    }()
+
+    /// PostHog EU Cloud (Frankfurt), chosen Nov 8 2026. A PostHog project can't change region, so
+    /// both projects live there.
+    static let posthogHost = "https://eu.i.posthog.com"
+
     static let googleClientID: String = {
         guard let raw = Bundle.main.object(forInfoDictionaryKey: "GIDClientID") as? String,
               !raw.isEmpty
@@ -47,7 +66,14 @@ enum AppConfig {
     }()
 
     // MARK: - Constants
-    static let freeMonthlyCheckInLimit = 30
+    static let freeMonthlyCheckInLimit: Int = {
+#if DEBUG
+        // For testing the limit without logging 30 check-ins: -anicca_free_limit 2
+        let override = UserDefaults.standard.integer(forKey: "anicca_free_limit")
+        if override > 0 { return override }
+#endif
+        return 30
+    }()
     static let freeMonthlyWarningThreshold = 25
 
     // MARK: - Subscriptions
@@ -71,6 +97,10 @@ enum AppConfig {
     static let lastReviewVersionKey = "anicca_last_review_version"
     static let checkInUserIDsLowercasedKey = "anicca_checkin_user_ids_lowercased"
     static let reminderNotificationID = "anicca.daily.reminder"
+    /// The Settings toggle "Share anonymous usage data" (see `UsageSharing`). Unset means the
+    /// default: on, once the sign-in screen's note has been shown.
+    static let shareUsageDataKey = "anicca_share_usage_data"
+    static let usageNoticeShownKey = "anicca_usage_notice_shown"
 
     // MARK: - URLs
     static let privacyPolicyURL = URL(string: "https://www.screenseiji.com/apps/anicca/privacy")!

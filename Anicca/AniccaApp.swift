@@ -40,6 +40,8 @@ struct AniccaApp: App {
 
     init() {
         RevenueCatService.shared.configure(apiKey: AppConfig.revenueCatAPIKey)
+        // Sends nothing until the person says Yes to sharing anonymous usage data (`UsageSharing`).
+        AnalyticsService.shared.configure(apiKey: AppConfig.posthogAPIKey, host: AppConfig.posthogHost)
         do {
             let schema = Schema([CheckIn.self, EmotionEntry.self, UserProfile.self])
             let configuration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)

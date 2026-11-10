@@ -84,12 +84,16 @@ final class AuthService: NSObject, ObservableObject {
             )
             // Without a session the profile insert would be rejected by RLS, so it waits until
             // the first signed-in load (see `loadProfile`).
-            guard let session = response.session else { return .confirmationEmailSent }
+            guard let session = response.session else {
+                AnalyticsService.shared.track(.signedUp(method: .email, needsEmailConfirmation: true))
+                return .confirmationEmailSent
+            }
             let userId = UserID.normalized(session.user.id)
             try await createProfile(userId: userId, email: email, displayName: displayName)
             await loadProfile(userId: userId, email: email)
             self.authProvider = .email
             self.isAuthenticated = true
+            AnalyticsService.shared.track(.signedUp(method: .email, needsEmailConfirmation: false))
             return .signedIn
         } catch {
             throw SupabaseErrorMapper.map(error)
@@ -109,6 +113,7 @@ final class AuthService: NSObject, ObservableObject {
             )
             self.authProvider = .email
             self.isAuthenticated = true
+            AnalyticsService.shared.track(.signedIn(method: .email))
         } catch {
             throw SupabaseErrorMapper.map(error)
         }
@@ -131,6 +136,7 @@ final class AuthService: NSObject, ObservableObject {
             )
             self.authProvider = .email
             self.isAuthenticated = true
+            AnalyticsService.shared.track(.signedIn(method: .email))
         } catch {
             debugLog("🔴 AuthService.handleAuthCallback failed: \(error)")
             // Already signed in (an old link opened again): nothing to tell the user.
@@ -191,6 +197,7 @@ final class AuthService: NSObject, ObservableObject {
             self.authProvider = .email
             self.passwordResetEmail = nil
             self.isAuthenticated = true
+            AnalyticsService.shared.track(.signedIn(method: .email))
         } catch {
             debugLog("🔴 AuthService.setNewPassword failed: \(error)")
             throw SupabaseErrorMapper.map(error)
@@ -237,6 +244,7 @@ final class AuthService: NSObject, ObservableObject {
             await loadProfile(userId: userId, email: email)
             self.isAuthenticated = true
             self.authProvider = .apple
+            trackProviderSignIn(.apple, accountCreatedAt: session.user.createdAt)
         } catch {
             throw SupabaseErrorMapper.map(error)
         }
@@ -264,6 +272,7 @@ final class AuthService: NSObject, ObservableObject {
             await loadProfile(userId: userId, email: email)
             self.isAuthenticated = true
             self.authProvider = .google
+            trackProviderSignIn(.google, accountCreatedAt: session.user.createdAt)
         } catch {
             debugLog("🔴 Google Sign-in Error: \(error)")
             throw SupabaseErrorMapper.map(error)
@@ -319,6 +328,9 @@ final class AuthService: NSObject, ObservableObject {
             self.currentUser = nil
             self.isAuthenticated = false
             self.authProvider = nil
+            AnalyticsService.shared.track(.signedOut)
+            AnalyticsService.shared.flush()
+            AnalyticsService.shared.resetIdentity()
         } catch {
             throw SupabaseErrorMapper.map(error)
         }
@@ -358,10 +370,16 @@ final class AuthService: NSObject, ObservableObject {
                 )
             )
 
+            // Which re-authentication confirmed the deletion says how the account signed in.
+            let method: SignInMethod = idToken != nil ? .apple : (googleIDToken != nil ? .google : .email)
+            AnalyticsService.shared.track(.accountDeleted(method: method))
+            AnalyticsService.shared.flush()
+
             try await client.auth.signOut()
             self.currentUser = nil
             self.isAuthenticated = false
             self.authProvider = nil
+            AnalyticsService.shared.resetIdentity()
         } catch {
             debugLog("🔴 AuthService.deleteAccount failed: \(error)")
             throw SupabaseErrorMapper.map(error)
@@ -501,6 +519,18 @@ final class AuthService: NSObject, ObservableObject {
         currentUser?.checkInStreak = streak
         currentUser?.totalCheckIns = totalCheckIns
         currentUser?.lastCheckInDate = lastDate
+    }
+
+    // MARK: - Analytics
+
+    /// Supabase doesn't say whether an Apple or Google sign-in created the account, so a brand-new
+    /// account counts as a sign-up.
+    private func trackProviderSignIn(_ method: SignInMethod, accountCreatedAt: Date) {
+        if AnalyticsEvent.isNewAccount(createdAt: accountCreatedAt) {
+            AnalyticsService.shared.track(.signedUp(method: method, needsEmailConfirmation: false))
+        } else {
+            AnalyticsService.shared.track(.signedIn(method: method))
+        }
     }
 
     // MARK: - Apple Helpers

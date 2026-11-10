@@ -81,20 +81,24 @@ final class SettingsViewModel: ObservableObject {
                 if !granted {
                     reminderEnabled = false
                     notificationsBlocked = true
+                    AnalyticsService.shared.track(.reminderPermissionDenied(source: .settings))
                     return
                 }
             case .denied:
                 reminderEnabled = false
                 notificationsBlocked = true
+                AnalyticsService.shared.track(.reminderPermissionDenied(source: .settings))
                 return
             default:
                 break
             }
             notifications.scheduleDailyReminder(at: reminderTime)
             await auth.updateReminderSettings(enabled: true, time: reminderTime)
+            AnalyticsService.shared.track(.reminderEnabled(source: .settings))
         } else {
             notifications.cancelDailyReminder()
             await auth.updateReminderSettings(enabled: false, time: nil)
+            AnalyticsService.shared.track(.reminderDisabled)
         }
         reminderEnabled = enabled
     }

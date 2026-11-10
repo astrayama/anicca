@@ -224,7 +224,7 @@ struct CheckInStartView: View {
             FlowLayout {
                 ForEach(viewModel.recents) { emotion in
                     EmotionChip(emotion: emotion, isSelected: viewModel.isSelected(emotion)) {
-                        viewModel.toggle(emotion)
+                        viewModel.toggle(emotion, source: .recent)
                     }
                 }
             }

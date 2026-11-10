@@ -35,6 +35,9 @@ packages:
   GoogleSignIn:
     url: https://github.com/google/GoogleSignIn-iOS
     from: 7.0.0
+  PostHog:
+    url: https://github.com/PostHog/posthog-ios.git
+    from: 3.93.6
 
 targets:
   Anicca:
@@ -75,6 +78,8 @@ targets:
         product: RevenueCat
       - package: GoogleSignIn
         product: GoogleSignIn
+      - package: PostHog
+        product: PostHog
       - sdk: AuthenticationServices.framework
       - sdk: StoreKit.framework
       - sdk: SafariServices.framework
@@ -113,6 +118,9 @@ targets:
       - path: Anicca/Config/Strings.swift
       - path: Anicca/Config/AppConfig.swift
       - path: Anicca/Config/RevenueCatKey.swift
+      - path: Anicca/Config/PostHogKey.swift
+      - path: Anicca/Models/AnalyticsEvent.swift
+      - path: Anicca/Models/UsageSharing.swift
     settings:
       base:
         GENERATE_INFOPLIST_FILE: YES

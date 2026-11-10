@@ -55,6 +55,40 @@ final class EmotionSelectionTests: XCTestCase {
         XCTAssertEqual(selection.entries.first?.intensity, 4)
     }
 
+    // MARK: - Where words came from (analytics only)
+
+    func testOneSourceGivesThatInputMethod() {
+        var selection = EmotionSelection()
+        selection.add(anxious, source: .recent)
+        selection.add(tired, source: .recent)
+        XCTAssertEqual(selection.inputMethod, .recent)
+        XCTAssertFalse(selection.usedMapMyFeelings)
+    }
+
+    func testTypedAndMappedWordsCountAsTyped() {
+        var selection = EmotionSelection()
+        selection.add(anxious, source: .typed)
+        selection.add(tired, source: .mapped)
+        XCTAssertEqual(selection.inputMethod, .typed)
+        XCTAssertTrue(selection.usedMapMyFeelings)
+    }
+
+    func testDifferentSourcesAreMixed() {
+        var selection = EmotionSelection()
+        selection.add(anxious, source: .mapped)
+        selection.toggle(calm, source: .browse)
+        XCTAssertEqual(selection.inputMethod, .mixed)
+    }
+
+    func testRemovingAWordForgetsItsSource() {
+        var selection = EmotionSelection()
+        selection.add(anxious, source: .mapped)
+        selection.add(calm, source: .browse)
+        selection.remove(anxious)
+        XCTAssertEqual(selection.inputMethod, .browse)
+        XCTAssertFalse(selection.usedMapMyFeelings)
+    }
+
     func testQueryModes() {
         XCTAssertEqual(LogQueryMode.mode(for: ""), .idle)
         XCTAssertEqual(LogQueryMode.mode(for: "   \n "), .idle)

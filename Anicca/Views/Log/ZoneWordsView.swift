@@ -20,7 +20,7 @@ struct ZoneWordsView: View {
                         FlowLayout {
                             ForEach(group.words) { emotion in
                                 EmotionChip(emotion: emotion, isSelected: viewModel.isSelected(emotion)) {
-                                    viewModel.toggle(emotion)
+                                    viewModel.toggle(emotion, source: .browse)
                                 }
                             }
                         }
